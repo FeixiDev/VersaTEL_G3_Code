@@ -9,26 +9,33 @@ import argparse_init as ai
 import linstordb
 import iscsi_json as ij
 import sundry
+import log
+
+_logger = log.Log()
+_collector = log.Collector()
 
 
-def comfirm_del(func):
+
+def comfirm_del(type):
     """
     Decorator providing confirmation of deletion function.
     :param func: Function to delete linstor resource
     """
-    @wraps(func)
-    def wrapper(*args):
-        cli_args = args[0]
-        if cli_args.yes:
-            func(*args)
-        else:
-            print('Are you sure you want to delete it? If yes, enter \'y/yes\'')
-            answer = input()
-            if answer in ['y', 'yes']:
+    def decorate(func):
+        @wraps(func)
+        def wrapper(*args):
+            cli_args = args[0]
+            if cli_args.yes:
                 func(*args)
             else:
-                print('Delete canceled')
-    return wrapper
+                print('Are you sure you want to delete this %s? If yes, enter \'y/yes\''%type)
+                answer = input()
+                if answer in ['y', 'yes']:
+                    func(*args)
+                else:
+                    print('Delete canceled')
+        return wrapper
+    return decorate
 
 
 # 多节点创建resource时，storapoo多于node的异常类
@@ -140,6 +147,7 @@ class Node():
         if args.gui:
             data = pickle.dumps(esc.stor.create_node(args.node, args.ip, args.nodetype))
             sundry.socket_send_result(data)
+
         elif args.node and args.nodetype and args.ip:
             esc.stor.create_node(args.node, args.ip, args.nodetype)
         else:
@@ -152,7 +160,7 @@ class Node():
 
     @staticmethod
     @comfirm_del
-    def delete(args,parser):
+    def delete(args):
         esc.stor.delete_node(args.node)
 
 
@@ -218,6 +226,7 @@ class Res():
                 sys.exit(0)
             #自动创建条件判断，符合则执行
             if all(list_auto_required) and not any(list_auto_forbid):
+                _logger.InputLogger.debug('create resource')
                 esc.stor.create_res_auto(args.resource, args.size, args.num)
             #手动创建条件判断，符合则执行
             elif all(list_manual_required) and not any(list_manual_forbid):
@@ -260,7 +269,6 @@ class Res():
         pass
 
 
-
     # resource删除判断
     @staticmethod
     @comfirm_del
@@ -277,7 +285,13 @@ class Res():
         if args.nocolor:
             tb.show_res_one(args.resource) if args.resource else tb.res_all()
         else:
-            tb.show_res_one_color(args.resource) if args.resource else tb.res_all_color()
+            if args.resource:
+                #%(asctime)s - [%(username)s] - [%(type)s] - [%(describe1)s] - [%(describe2)s] - [%(cmd)s]
+                _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'','describe2':'','cmd':'stor r s'})
+                tb.show_res_one_color(args.resource)
+            else:
+                _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username()})
+                tb.res_all_color()
 
 
 #storage pool
@@ -312,7 +326,7 @@ class SP():
         pass
 
     @staticmethod
-    @comfirm_del
+    @comfirm_del('storagepool')
     def delete(args):
         esc.stor.delete_storagepool(args.node, args.storagepool)
 

@@ -4,7 +4,14 @@ import prettytable as pt
 from functools import wraps
 import sqlite3
 import threading
+import traceback
+import io
+import sys
 import execute_sys_command as esc
+import log
+
+_logger = log.Log()
+_collector = log.Collector()
 
 
 class LINSTORDB():
@@ -445,7 +452,7 @@ def table_color(func):
                 lst[-1] = ca.Fore.RED + lst[-1] + ca.Style.RESET_ALL
         for i in data:
             table.add_row(i)
-        print(table)
+        return table
     return wrapper
 
 #无颜色输出表格装饰器
@@ -562,10 +569,16 @@ class OutputData(DataProcess):
 
     def show_res_one_color(self,res):
         try:
-            print("resource:%s\nmirror_way:%s\nsize:%s\ndevice_name:%s\nused:%s" % self.process_data_resource_one(
+            f = io.StringIO()
+            f.write("resource:%s\nmirror_way:%s\nsize:%s\ndevice_name:%s\nused:%s\n" % self.process_data_resource_one(
                 res))
-            self.res_one_color(res)
+            # print("resource:%s\nmirror_way:%s\nsize:%s\ndevice_name:%s\nused:%s" % self.process_data_resource_one(
+            #     res))
+            f.write(str(self.res_one_color(res)))
+            print(f.getvalue())
+            _logger.OutputLogger.debug(f.getvalue(), extra={"result": "SUCCESS"})
         except TypeError:
+            _logger.OutputLogger.error(str(traceback.format_exc()), extra={"result": "FAIL"})
             print('Resource %s does not exist.' % res)
 
     def show_res_one(self,res):
