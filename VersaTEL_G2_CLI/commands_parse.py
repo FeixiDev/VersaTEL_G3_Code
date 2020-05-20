@@ -4,6 +4,8 @@ import sys
 import re
 import pickle
 from functools import wraps
+import traceback
+
 import execute_sys_command as esc
 import argparse_init as ai
 import linstordb
@@ -168,9 +170,16 @@ class Node():
     def node_show(cls,args):
         tb = linstordb.OutputData()
         if args.nocolor:
-            tb.show_node_one(args.node) if args.node else tb.node_all()
+            if args.node:
+                _logger.InputLogger.debug('')
+                tb.show_node_one(args.node)
+            else:
+                tb.node_all()
         else:
-            tb.show_node_one_color(args.node) if args.node else tb.node_all_color()
+            if args.node:
+                tb.show_node_one_color(args.node)
+            else:
+                tb.node_all_color()
 
 
 #resource
@@ -231,6 +240,7 @@ class Res():
             #手动创建条件判断，符合则执行
             elif all(list_manual_required) and not any(list_manual_forbid):
                 try:
+                    _logger.InputLogger.debug('create resource manualy')
                     cls.is_args_correct(args.node,args.storagepool)
                     esc.stor.create_res_manual(args.resource, args.size, args.node, args.storagepool)
                 except NodeLessThanSPError:
@@ -290,8 +300,14 @@ class Res():
                 _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'','describe2':'','cmd':'stor r s'})
                 tb.show_res_one_color(args.resource)
             else:
-                _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username()})
-                tb.res_all_color()
+                _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'1','describe2':'2','cmd':'stor r s'})
+                try:
+                    table = tb.res_all_color()
+                    _logger.OutputLogger.debug(str(table), extra={"result": "SUCCESS"})
+                    print(table)
+                except Exception:
+                    print('Error')
+                    _logger.OutputLogger.debug(str(traceback.format_exc()), extra={"result": "SUCCESS"})
 
 
 #storage pool
