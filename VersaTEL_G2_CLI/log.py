@@ -35,10 +35,11 @@ class Log(object):
         # os.makedirs(log_dir, exist_ok=True)
         # self._log_dir = log_dir
         # self._log_name = log_name
-        logging.config.fileConfig('logging.conf')
-        self.InputLogger = self.logger_input()
-        self.OutputLogger = self.logger_output()
-        self.LocalLogger = self.logger_local()
+        logging.config.fileConfig('logging_GUI.conf')
+        # self.InputLogger = self.logger_input()
+        # self.OutputLogger = self.logger_output()
+        # self.LocalLogger = self.logger_local()
+        self.GUILogger = self.logger_gui()
 
 
     # def set_logger(self):
@@ -92,6 +93,13 @@ class Log(object):
         logger_local = logging.getLogger('localmessage')
         extra_dict = {"path":"PATH","RES":"RES"}
         logger = MyLoggerAdapter(logger_local,extra_dict)
+        return logger
+
+
+    def logger_gui(self):
+        logger_gui = logging.getLogger('gui')
+        extra_dict = {"username": "USERNAME","type":"TYPE","describe1":"DESCRIBE","describe2":"DESCRIBE","data":"DATA"}
+        logger = MyLoggerAdapter(logger_gui,extra_dict)
         return logger
 
 

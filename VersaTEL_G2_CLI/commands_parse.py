@@ -353,6 +353,7 @@ class SP():
         if args.nocolor:
             tb.show_sp_one(args.storagepool) if args.storagepool else tb.sp_all()
         else:
+            _logger.GUILogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'1','describe2':'2','data':'11111'})
             tb.show_sp_one_color(args.storagepool) if args.storagepool else tb.sp_all_color()
 
 
