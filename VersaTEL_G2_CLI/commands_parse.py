@@ -11,24 +11,26 @@ import iscsi_json as ij
 import sundry
 
 
-def comfirm_del(func):
+def comfirm_del(type):
     """
     Decorator providing confirmation of deletion function.
     :param func: Function to delete linstor resource
     """
-    @wraps(func)
-    def wrapper(*args):
-        cli_args = args[0]
-        if cli_args.yes:
-            func(*args)
-        else:
-            print('Are you sure you want to delete it? If yes, enter \'y/yes\'')
-            answer = input()
-            if answer in ['y', 'yes']:
+    def decorate(func):
+        @wraps(func)
+        def wrapper(*args):
+            cli_args = args[0]
+            if cli_args.yes:
                 func(*args)
             else:
-                print('Delete canceled')
-    return wrapper
+                print('Are you sure you want to delete this %s? If yes, enter \'y/yes\''%type)
+                answer = input()
+                if answer in ['y', 'yes']:
+                    func(*args)
+                else:
+                    print('Delete canceled')
+        return wrapper
+    return decorate
 
 
 # 多节点创建resource时，storapoo多于node的异常类
@@ -151,7 +153,7 @@ class Node():
 
 
     @staticmethod
-    @comfirm_del
+    @comfirm_del('node')
     def delete(args,parser):
         esc.stor.delete_node(args.node)
 
@@ -263,7 +265,7 @@ class Res():
 
     # resource删除判断
     @staticmethod
-    @comfirm_del
+    @comfirm_del('resource')
     def delete(args):
         if args.node:
             esc.stor.delete_resource_des(args.node, args.resource)
@@ -312,7 +314,7 @@ class SP():
         pass
 
     @staticmethod
-    @comfirm_del
+    @comfirm_del('storage pool')
     def delete(args):
         esc.stor.delete_storagepool(args.node, args.storagepool)
 
