@@ -171,7 +171,6 @@ class Node():
         tb = linstordb.OutputData()
         if args.nocolor:
             if args.node:
-                _logger.InputLogger.debug('')
                 tb.show_node_one(args.node)
             else:
                 tb.node_all()
@@ -235,12 +234,16 @@ class Res():
                 sys.exit(0)
             #自动创建条件判断，符合则执行
             if all(list_auto_required) and not any(list_auto_forbid):
-                _logger.InputLogger.debug('create resource')
                 esc.stor.create_res_auto(args.resource, args.size, args.num)
+                _logger.CLILogger.debug('create res',
+                                            extra={'username': _collector.get_username(),
+                                           'type': 'usercli',
+                                           'describe1': 'stor r c %s -s %s -a -num %d'%(args.resource,args.size,args.num),
+                                           'describe2': 'describe2',
+                                           'data': 'SUCCESS'})
             #手动创建条件判断，符合则执行
             elif all(list_manual_required) and not any(list_manual_forbid):
                 try:
-                    _logger.InputLogger.debug('create resource manualy')
                     cls.is_args_correct(args.node,args.storagepool)
                     esc.stor.create_res_manual(args.resource, args.size, args.node, args.storagepool)
                 except NodeLessThanSPError:
@@ -297,17 +300,15 @@ class Res():
         else:
             if args.resource:
                 #%(asctime)s - [%(username)s] - [%(type)s] - [%(describe1)s] - [%(describe2)s] - [%(cmd)s]
-                _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'','describe2':'','cmd':'stor r s'})
+                # _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'','describe2':'','cmd':'stor r s'})
                 tb.show_res_one_color(args.resource)
             else:
-                _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'1','describe2':'2','cmd':'stor r s'})
+                # _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'1','describe2':'2','cmd':'stor r s'})
                 try:
-                    table = tb.res_all_color()
-                    _logger.OutputLogger.debug(str(table), extra={"result": "SUCCESS"})
-                    print(table)
+                    tb.res_all_color()
                 except Exception:
                     print('Error')
-                    _logger.OutputLogger.debug(str(traceback.format_exc()), extra={"result": "SUCCESS"})
+                    # _logger.OutputLogger.debug(str(traceback.format_exc()), extra={"result": "SUCCESS"})
 
 
 #storage pool
@@ -353,7 +354,6 @@ class SP():
         if args.nocolor:
             tb.show_sp_one(args.storagepool) if args.storagepool else tb.sp_all()
         else:
-            _logger.GUILogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'1','describe2':'2','data':'11111'})
             tb.show_sp_one_color(args.storagepool) if args.storagepool else tb.sp_all_color()
 
 

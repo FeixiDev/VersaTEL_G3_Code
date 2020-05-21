@@ -452,6 +452,7 @@ def table_color(func):
                 lst[-1] = ca.Fore.RED + lst[-1] + ca.Style.RESET_ALL
         for i in data:
             table.add_row(i)
+        print(table)
         return table
     return wrapper
 
@@ -464,6 +465,7 @@ def table(func):
         for i in data:
             table.add_row(i)
         print(table)
+        return table
     return wrapper
 
 
@@ -519,22 +521,44 @@ class OutputData(DataProcess):
     # 指定的node视图
     def show_node_one_color(self, node):
         try:
-            print(
+            info_first = (
                 "node:%s\nnodetype:%s\nresource num:%s\nstoragepool num:%s\naddr:%s\nstatus:%s" % self.process_data_node_one(
                     node))
-            self.node_one_color(node)
-            self.node_stp_one_color(node)
+            print(info_first)
+            info_second = self.node_one_color(node)
+            info_third = self.node_stp_one_color(node)
+            result = '\n'.join([info_first,str(info_second),str(info_third)])
+            _logger.CLILogger.debug('node show',
+                                    extra={'username': _collector.get_username(),
+                                           'type': 'usercli',
+                                           'describe1': 'stor n s',
+                                           'describe2': 'describe2',
+                                           'data': result})
         except TypeError:
+            _logger.CLILogger.debug('node show',
+                                    extra={'username': _collector.get_username(),
+                                           'type': 'usercli',
+                                           'describe1': 'stor n s',
+                                           'describe2': 'describe2',
+                                           'data': str(traceback.format_exc())})
             print('Node %s does not exist.' % node)
 
 
     def show_node_one(self, node):
         try:
-            print(
+            info_first = (
                 "node:%s\nnodetype:%s\nresource num:%s\nstoragepool num:%s\naddr:%s\nstatus:%s" % self.process_data_node_one(
                     node))
-            self.node_one(node)
-            self.node_stp_one(node)
+            print(info_first)
+            info_second = self.node_one(node)
+            info_third = self.node_stp_one(node)
+            result = '\n'.join([info_first,str(info_second),str(info_third)])
+            _logger.CLILogger.debug('node show',
+                                    extra={'username': _collector.get_username(),
+                                           'type': 'usercli',
+                                           'describe1': 'stor n s --no-color',
+                                           'describe2': 'describe2',
+                                           'data': result})
         except TypeError:
             print('Node %s does not exist.' % node)
 
@@ -575,10 +599,15 @@ class OutputData(DataProcess):
             # print("resource:%s\nmirror_way:%s\nsize:%s\ndevice_name:%s\nused:%s" % self.process_data_resource_one(
             #     res))
             f.write(str(self.res_one_color(res)))
-            print(f.getvalue())
-            _logger.OutputLogger.debug(f.getvalue(), extra={"result": "SUCCESS"})
+            result = f.getvalue()
+            print(result)
+            _logger.GUILogger.debug('resource show',
+                                    extra={'username': _collector.get_username(),
+                                           'type': 'usercli',
+                                           'describe1': 'stor r s',
+                                           'describe2': 'describe2',
+                                           'data': result})
         except TypeError:
-            _logger.OutputLogger.error(str(traceback.format_exc()), extra={"result": "FAIL"})
             print('Resource %s does not exist.' % res)
 
     def show_res_one(self,res):
