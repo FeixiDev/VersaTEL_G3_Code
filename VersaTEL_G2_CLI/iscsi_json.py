@@ -15,7 +15,12 @@ class JSON_OPERATION:
             return read_json_dict
         except BaseException:
             with open('iSCSI_Data.json', "w") as fw:
-                keydata = {"Host": {}, "Disk": {}, "HostGroup": {}, "DiskGroup": {}, "Map": {}}
+                keydata = {
+                    "Host": {},
+                    "Disk": {},
+                    "HostGroup": {},
+                    "DiskGroup": {},
+                    "Map": {}}
                 json.dump(keydata, fw, indent=4, separators=(',', ': '))
             return keydata
 
@@ -64,4 +69,3 @@ class JSON_OPERATION:
         self.read_data['crm'].update({'target': data[2]})
         with open('iSCSI_Data.json', "w") as fw:
             json.dump(self.read_data, fw, indent=4, separators=(',', ': '))
-

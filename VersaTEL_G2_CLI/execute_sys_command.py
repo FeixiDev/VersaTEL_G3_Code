@@ -4,15 +4,20 @@ import subprocess
 import time
 from collections import OrderedDict
 
+
 class crm():
     def re_data(self, crmdatas):
         crmdata = str(crmdatas)
         plogical = re.compile(
             r'primitive\s(\w*)\s\w*\s\\\s*\w*\starget_iqn="([a-zA-Z0-9.:-]*)"\s[a-z=-]*\slun=(\d*)\spath="([a-zA-Z0-9/]*)"\sallowed_initiators="([a-zA-Z0-9.: -]+)"(?:.*\s*){2}meta target-role=(\w*)')
-        pvip = re.compile(r'primitive\s(\w*)\sIPaddr2\s\\\s*\w*\sip=([0-9.]*)\s\w*=(\d*)\s')
+        pvip = re.compile(
+            r'primitive\s(\w*)\sIPaddr2\s\\\s*\w*\sip=([0-9.]*)\s\w*=(\d*)\s')
         ptarget = re.compile(
             r'primitive\s(\w*)\s\w*\s\\\s*params\siqn="([a-zA-Z0-9.:-]*)"\s[a-z=-]*\sportals="([0-9.]*):\d*"\s\\')
-        redata = [plogical.findall(crmdata), pvip.findall(crmdata), ptarget.findall(crmdata)]
+        redata = [
+            plogical.findall(crmdata),
+            pvip.findall(crmdata),
+            ptarget.findall(crmdata)]
         print("get crm config data")
         return redata
 
@@ -83,7 +88,14 @@ class crm():
     def createco(self, res, target):
         # crm conf colocation <COLOCATION_NAME> inf: <LUN_NAME> <TARGET_NAME>
         print("crm conf colocation co_" + res + " inf: " + res + " " + target)
-        coclocation = subprocess.call("crm conf colocation co_" + res + " inf: " + res + " " + target, shell=True)
+        coclocation = subprocess.call(
+            "crm conf colocation co_" +
+            res +
+            " inf: " +
+            res +
+            " " +
+            target,
+            shell=True)
         if coclocation == 0:
             print("set coclocation")
             return True
@@ -93,7 +105,14 @@ class crm():
     def createor(self, res, target):
         # crm conf order <ORDER_NAME1> <TARGET_NAME> <LUN_NAME>
         print("crm conf order or_" + res + " " + target + " " + res)
-        order = subprocess.call("crm conf order or_" + res + " " + target + " " + res, shell=True)
+        order = subprocess.call(
+            "crm conf order or_" +
+            res +
+            " " +
+            target +
+            " " +
+            res,
+            shell=True)
         if order == 0:
             print("set order")
             return True
@@ -124,19 +143,28 @@ class lvm():
 
     @staticmethod
     def get_vg():
-        result_vg = subprocess.Popen('vgs',shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        result_vg = subprocess.Popen(
+            'vgs',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         return result_vg.stdout.read().decode()
 
     @staticmethod
     def get_thinlv():
-        result_thinlv = subprocess.Popen('lvs',shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        result_thinlv = subprocess.Popen(
+            'lvs',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         return result_thinlv.stdout.read().decode()
 
     @staticmethod
     def refine_thinlv(str):
         list_tb = str.splitlines()
         list_thinlv = []
-        re_ = re.compile(r'\s*(\S*)\s*(\S*)\s*\S*\s*(\S*)\s*\S*\s*\S*\s*\S*\s*?')
+        re_ = re.compile(
+            r'\s*(\S*)\s*(\S*)\s*\S*\s*(\S*)\s*\S*\s*\S*\s*\S*\s*?')
         for list_one in list_tb:
             if 'twi' in list_one:
                 thinlv_one = re_.findall(list_one)
@@ -147,7 +175,8 @@ class lvm():
     def refine_vg(str):
         list_tb = str.splitlines()
         list_vg = []
-        re_ = re.compile(r'\s*(\S*)\s*\S*\s*\S*\s*\S*\s*\S*\s*(\S*)\s*(\S*)\s*?')
+        re_ = re.compile(
+            r'\s*(\S*)\s*\S*\s*\S*\s*\S*\s*\S*\s*(\S*)\s*(\S*)\s*?')
         for list_one in list_tb[1:]:
             vg_one = re_.findall(list_one)
             list_vg.append(list(vg_one[0]))
@@ -157,25 +186,34 @@ class lvm():
 class linstor():
     @staticmethod
     def get_node():
-        result_node = subprocess.Popen('linstor --no-color --no-utf8 n l', shell=True, stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT)
+        result_node = subprocess.Popen(
+            'linstor --no-color --no-utf8 n l',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         return result_node.stdout.read().decode('utf-8')
 
     @staticmethod
     def get_res():
-        result_res = subprocess.Popen('linstor --no-color --no-utf8 r lv', shell=True, stdout=subprocess.PIPE,
-                                      stderr=subprocess.STDOUT)
+        result_res = subprocess.Popen(
+            'linstor --no-color --no-utf8 r lv',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         return result_res.stdout.read().decode('utf-8')
 
     @staticmethod
     def get_sp():
-        result_sp = subprocess.Popen('linstor --no-color --no-utf8 sp l', shell=True, stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
+        result_sp = subprocess.Popen(
+            'linstor --no-color --no-utf8 sp l',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         return result_sp.stdout.read().decode('utf-8')
 
     @staticmethod
     def refine_linstor(table_data):
-        reSeparate = re.compile('(.*?\s\|)')
+        reSeparate = re.compile(r'(.*?\s\|)')
         list_table = table_data.split('\n')
         list_data_all = []
 
@@ -196,7 +234,7 @@ class linstor():
         return list_data_all
 
 
-#子命令stor调用的方法
+# 子命令stor调用的方法
 class stor():
     @staticmethod
     def judge_cmd_result_suc(cmd):
@@ -215,9 +253,15 @@ class stor():
         re_err = re.compile('WARNING')
         if re_err.search(cmd):
             return True
+
     @staticmethod
     def get_err_not_vg(result, node, vg):
-        re_ = re.compile(r'\(Node: \'' + node + '\'\) Volume group \'' + vg + '\' not found')
+        re_ = re.compile(
+            r'\(Node: \'' +
+            node +
+            r'\'\) Volume group \'' +
+            vg +
+            '\' not found')
         if re_.search(result):
             return (re_.search(result).group())
 
@@ -235,7 +279,11 @@ class stor():
 
     @staticmethod
     def execute_cmd(cmd):
-        action = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        action = subprocess.Popen(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         result = action.stdout.read()
         if stor.judge_cmd_result_suc(str(result)):
             return True
@@ -250,7 +298,7 @@ class stor():
     @staticmethod
     def print_excute_result(cmd):
         result = stor.execute_cmd(cmd)
-        if result == True:
+        if result:
             print('SUCCESS')
             return True
         else:
@@ -272,7 +320,7 @@ class stor():
     def linstor_create_rd(res):
         cmd_rd = 'linstor rd c %s' % res
         result = stor.execute_cmd(cmd_rd)
-        if result == True:
+        if result:
             return True
         else:
             print('FAIL')
@@ -282,7 +330,7 @@ class stor():
     def linstor_create_vd(res, size):
         cmd_vd = 'linstor vd c %s %s' % (res, size)
         result = stor.execute_cmd(cmd_vd)
-        if result == True:
+        if result:
             return True
         else:
             print('FAIL')
@@ -293,9 +341,10 @@ class stor():
     @staticmethod
     def create_res_auto(res, size, num):
         cmd = 'linstor r c %s --auto-place %d' % (res, num)
-        if stor.linstor_create_rd(res) is True and stor.linstor_create_vd(res, size) is True:
+        if stor.linstor_create_rd(
+                res) is True and stor.linstor_create_vd(res, size) is True:
             result = stor.execute_cmd(cmd)
-            if result == True:
+            if result:
                 print('SUCCESS')
                 return True
             else:
@@ -323,31 +372,42 @@ class stor():
                 stor.linstor_delete_rd(res)
 
         def create_resource(cmd):
-            action = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            action = subprocess.run(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
             result = action.stdout
             if stor.judge_cmd_result_war(str(result)):
                 print(stor.get_war_mes(result.decode('utf-8')))
 
             if stor.judge_cmd_result_suc(str(result)):
-                print('Resource %s was successfully created on Node %s' % (res, node_one))
+                print(
+                    'Resource %s was successfully created on Node %s' %
+                    (res, node_one))
             elif stor.judge_cmd_result_err(str(result)):
                 str_fail_cause = stor.get_err_detailes(result.decode('utf-8'))
                 dict_fail = {node_one: str_fail_cause}
                 flag.update(dict_fail)
 
         if len(stp) == 1:
-            if stor.linstor_create_rd(res) is True and stor.linstor_create_vd(res, size) is True:
+            if stor.linstor_create_rd(
+                    res) is True and stor.linstor_create_vd(res, size) is True:
                 for node_one in node:
-                    cmd = 'linstor resource create %s %s --storage-pool %s' % (node_one, res, stp[0])
+                    cmd = 'linstor resource create %s %s --storage-pool %s' % (
+                        node_one, res, stp[0])
                     create_resource(cmd)
                 whether_delete_rd()
                 return print_fail_node()
             else:
-                return ('The ResourceDefinition already exists')  # need to be prefect
+                # need to be prefect
+                return ('The ResourceDefinition already exists')
         elif len(node) == len(stp):
-            if stor.linstor_create_rd(res) is True and stor.linstor_create_vd(res, size) is True:
+            if stor.linstor_create_rd(
+                    res) is True and stor.linstor_create_vd(res, size) is True:
                 for node_one, stp_one in zip(node, stp):
-                    cmd = 'linstor resource create %s %s --storage-pool %s' % (node_one, res, stp_one)
+                    cmd = 'linstor resource create %s %s --storage-pool %s' % (
+                        node_one, res, stp_one)
                     create_resource(cmd)
                 whether_delete_rd()
                 return print_fail_node()
@@ -374,10 +434,16 @@ class stor():
                 return True
 
         def add_mirror():
-            action = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            action = subprocess.run(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
             result = action.stdout
             if stor.judge_cmd_result_suc(str(result)):
-                print('Resource %s was successfully created on Node %s' % (res, node_one))
+                print(
+                    'Resource %s was successfully created on Node %s' %
+                    (res, node_one))
             elif stor.judge_cmd_result_err(str(result)):
                 str_fail_cause = stor.get_err_detailes(result.decode('utf-8'))
                 dict_fail = {node_one: str_fail_cause}
@@ -385,12 +451,14 @@ class stor():
 
         if len(stp) == 1:
             for node_one in node:
-                cmd = 'linstor resource create %s %s --storage-pool %s' % (node_one, res, stp[0])
+                cmd = 'linstor resource create %s %s --storage-pool %s' % (
+                    node_one, res, stp[0])
                 add_mirror()
             return print_fail_node()
         elif len(node) == len(stp):
             for node_one, stp_one in zip(node, stp):
-                cmd = 'linstor resource create %s %s --storage-pool %s' % (node_one, res, stp_one)
+                cmd = 'linstor resource create %s %s --storage-pool %s' % (
+                    node_one, res, stp_one)
                 add_mirror()
             return print_fail_node()
         else:
@@ -418,7 +486,11 @@ class stor():
     @staticmethod
     def create_storagepool_lvm(node, stp, vg):
         cmd = 'linstor storage-pool create lvm %s %s %s' % (node, stp, vg)
-        action = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        action = subprocess.run(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         result = action.stdout
         if stor.judge_cmd_result_war(str(result)):
             print(result.decode('utf-8'))
@@ -427,7 +499,9 @@ class stor():
             # 使用不存的vg
             if stor.get_err_not_vg(str(result), node, vg):
                 print(stor.get_err_not_vg(str(result), node, vg))
-                subprocess.check_output('linstor storage-pool delete %s %s' % (node, stp), shell=True)
+                subprocess.check_output(
+                    'linstor storage-pool delete %s %s' %
+                    (node, stp), shell=True)
             else:
                 print(result.decode('utf-8'))
                 print('FAIL')
@@ -452,17 +526,23 @@ class stor():
     @staticmethod
     def create(node, ip, nt):
         cmd = 'linstor node create %s %s  --node-type %s' % (node, ip, nt)
-        nt_value = ['Combined', 'combined', 'Controller', 'Auxiliary', 'Satellite']
+        nt_value = [
+            'Combined',
+            'combined',
+            'Controller',
+            'Auxiliary',
+            'Satellite']
         if nt not in nt_value:
-            print('node type error,choose from ''Combined', 'Controller', 'Auxiliary', 'Satellite''')
+            print('node type error,choose from ''Combined',
+                  'Controller', 'Auxiliary', 'Satellite''')
         else:
             return stor.print_excute_result(cmd)
     # 删除node
+
     @staticmethod
     def delete_node(node):
         cmd = 'linstor node delete %s' % node
         return stor.print_excute_result(cmd)
-
 
 
 class iscsi_map():
@@ -514,7 +594,10 @@ class iscsi_map():
             target = i[0]
             targetiqn = i[1]
         for disk in mapdata['disk']:
-            res = [disk, mapdata['disk'].get(disk)[0], mapdata['disk'].get(disk)[1]]
+            res = [
+                disk,
+                mapdata['disk'].get(disk)[0],
+                mapdata['disk'].get(disk)[1]]
             if cd.createres(res, mapdata['host_iqn'], targetiqn):
                 c = cd.createco(res[0], target)
                 o = cd.createor(res[0], target)
@@ -543,4 +626,3 @@ class iscsi_map():
                 else:
                     return False
             return True
-
