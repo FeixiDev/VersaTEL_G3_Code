@@ -17,7 +17,6 @@ _logger = log.Log()
 _collector = log.Collector()
 
 
-
 def comfirm_del(type):
     """
     Decorator providing confirmation of deletion function.
@@ -30,7 +29,9 @@ def comfirm_del(type):
             if cli_args.yes:
                 func(*args)
             else:
-                print('Are you sure you want to delete this %s? If yes, enter \'y/yes\''%type)
+                print(
+                    'Are you sure you want to delete this %s? If yes, enter \'y/yes\'' %
+                    type)
                 answer = input()
                 if answer in ['y', 'yes']:
                     func(*args)
@@ -53,6 +54,7 @@ class Vtel():
     """
     Analysis and judgment of parsers vtel, stor, iscsi
     """
+
     def __init__(self):
         self.cmd = ai.Commands()
         self.vtel = self.cmd.vtel
@@ -60,10 +62,10 @@ class Vtel():
 
     def vtel_judge(self):
         if self.args.subargs_vtel == 'stor':
-            stor = Stor(self.args,self.cmd)
+            stor = Stor(self.args, self.cmd)
             stor.parse()
         elif self.args.subargs_vtel == 'iscsi':
-            iscsi = Iscsi(self.args,self.cmd)
+            iscsi = Iscsi(self.args, self.cmd)
             iscsi.parse()
         else:
             self.vtel.print_help()
@@ -73,7 +75,8 @@ class Stor():
     """
     Analysis of subcommand stor and judgment of parameters.
     """
-    def __init__(self,args,cmd):
+
+    def __init__(self, args, cmd):
         self.args = args
         self.cmd = cmd
 
@@ -98,7 +101,7 @@ class Stor():
         parser = self.cmd
 
         if args.subargs_res in ['create', 'c']:
-            Res.create(args,parser)
+            Res.create(args, parser)
         elif args.subargs_res in ['modify', 'm']:
             Res.modify(args)
         elif args.subargs_res in ['delete', 'd']:
@@ -112,7 +115,7 @@ class Stor():
         args = self.args
         parser = self.cmd
         if args.subargs_sp in ['create', 'c']:
-            SP.create(args,parser)
+            SP.create(args, parser)
         elif args.subargs_sp in ['modify', 'm']:
             SP.modify()
         elif args.subargs_sp in ['delete', 'd']:
@@ -144,10 +147,14 @@ class Stor():
 
 class Node():
     @classmethod
-    def create(cls,args,parser):
+    def create(cls, args, parser):
         parser_create = parser.node_create
         if args.gui:
-            data = pickle.dumps(esc.stor.create_node(args.node, args.ip, args.nodetype))
+            data = pickle.dumps(
+                esc.stor.create_node(
+                    args.node,
+                    args.ip,
+                    args.nodetype))
             sundry.socket_send_result(data)
 
         elif args.node and args.nodetype and args.ip:
@@ -156,18 +163,16 @@ class Node():
             parser_create.print_help()
 
     @classmethod
-    def modify(cls,args):
+    def modify(cls, args):
         pass
-
 
     @staticmethod
     @comfirm_del
     def delete(args):
         esc.stor.delete_node(args.node)
 
-
     @classmethod
-    def node_show(cls,args):
+    def node_show(cls, args):
         tb = linstordb.OutputData()
         if args.nocolor:
             if args.node:
@@ -181,11 +186,11 @@ class Node():
                 tb.node_all_color()
 
 
-#resource
+# resource
 class Res():
     # 指定node和storagepool数量的规范判断，符合则继续执行
     @staticmethod
-    def is_args_correct(node,storagepool):
+    def is_args_correct(node, storagepool):
         if len(node) < len(storagepool):
             raise NodeLessThanSPError('指定的storagepool数量应少于node数量')
 
@@ -195,9 +200,8 @@ class Res():
         if not re_size.match(size):
             raise InvalidSizeError('Invalid Size')
 
-
     @classmethod
-    def create(cls,args,parser):
+    def create(cls, args, parser):
         """
         Create a LINSTOR resource. There are three types of creation based on different parameters:
         Automatically create resource,
@@ -209,49 +213,67 @@ class Res():
         :param parser: The instantiated object of Commands, used to call the parser in the Commands class.
 
         """
-        #Create a resource parser for printing help instructions
+        # Create a resource parser for printing help instructions
         parser_create = parser.res_create
 
         """对应创建模式必需输入的参数和禁止输入的参数"""
         # Parameters required for automatic resource creation
         list_auto_required = [args.auto, args.num]
         # Automatically create input parameters for resource prohibition
-        list_auto_forbid = [args.node, args.storagepool, args.diskless,args.add_mirror]
-        #Specify the node and storage pool to create resources require input parameters
+        list_auto_forbid = [
+            args.node,
+            args.storagepool,
+            args.diskless,
+            args.add_mirror]
+        # Specify the node and storage pool to create resources require input
+        # parameters
         list_manual_required = [args.node, args.storagepool]
-        #Specify the input parameters for node and storage pool creation resource prohibition
-        list_manual_forbid = [args.auto, args.num, args.diskless,args.add_mirror]
-        #Create diskless resource prohibited input parameters
-        list_diskless_forbid = [args.auto, args.num, args.storagepool,args.add_mirror]
+        # Specify the input parameters for node and storage pool creation
+        # resource prohibition
+        list_manual_forbid = [
+            args.auto,
+            args.num,
+            args.diskless,
+            args.add_mirror]
+        # Create diskless resource prohibited input parameters
+        list_diskless_forbid = [
+            args.auto,
+            args.num,
+            args.storagepool,
+            args.add_mirror]
 
         if args.size:
-            #judge size
+            # judge size
             try:
                 cls.is_vail_size(args.size)
                 cls.is_vail_size(args.size)
             except InvalidSizeError:
                 print('%s is not a valid size!' % args.size)
                 sys.exit(0)
-            #自动创建条件判断，符合则执行
+            # 自动创建条件判断，符合则执行
             if all(list_auto_required) and not any(list_auto_forbid):
                 esc.stor.create_res_auto(args.resource, args.size, args.num)
-                _logger.CLILogger.debug('create res',
-                                            extra={'username': _collector.get_username(),
-                                           'type': 'usercli',
-                                           'describe1': 'stor r c %s -s %s -a -num %d'%(args.resource,args.size,args.num),
-                                           'describe2': 'describe2',
-                                           'data': 'SUCCESS'})
-            #手动创建条件判断，符合则执行
+                _logger.CLILogger.debug(
+                    'create res',
+                    extra={
+                        'username': _collector.get_username(),
+                        'type': 'usercli',
+                        'describe1': 'stor r c %s -s %s -a -num %d' % (args.resource,
+                                                                       args.size,
+                                                                       args.num),
+                        'describe2': 'describe2',
+                        'data': 'SUCCESS'})
+            # 手动创建条件判断，符合则执行
             elif all(list_manual_required) and not any(list_manual_forbid):
                 try:
-                    cls.is_args_correct(args.node,args.storagepool)
-                    esc.stor.create_res_manual(args.resource, args.size, args.node, args.storagepool)
+                    cls.is_args_correct(args.node, args.storagepool)
+                    esc.stor.create_res_manual(
+                        args.resource, args.size, args.node, args.storagepool)
                 except NodeLessThanSPError:
                     print('The number of nodes does not meet the requirements')
                     sys.exit(0)
             else:
                 parser_create.print_help()
-
 
         elif args.diskless:
             # 创建resource的diskless资源条件判断，符合则执行
@@ -261,15 +283,17 @@ class Res():
                 parser_create.print_help()
 
         elif args.add_mirror:
-            #手动添加mirror条件判断，符合则执行
-            if all([args.node,args.storagepool]) and not any([args.auto, args.num]):
+            # 手动添加mirror条件判断，符合则执行
+            if all([args.node, args.storagepool]) and not any(
+                    [args.auto, args.num]):
                 if Res.is_args_correct():
-                    esc.stor.add_mirror_manual(args.resource,args.node,args.storagepool)
+                    esc.stor.add_mirror_manual(
+                        args.resource, args.node, args.storagepool)
                 else:
                     parser_create.print_help()
-            #自动添加mirror条件判断，符合则执行
-            elif all([args.auto,args.num]) and not any([args.node,args.storagepool]):
-                esc.stor.add_mirror_auto(args.resource,args.num)
+            # 自动添加mirror条件判断，符合则执行
+            elif all([args.auto, args.num]) and not any([args.node, args.storagepool]):
+                esc.stor.add_mirror_auto(args.resource, args.num)
             else:
                 parser_create.print_help()
 
@@ -278,11 +302,11 @@ class Res():
 
     # resource修改功能，未开发
     @classmethod
-    def modify(cls,args):
+    def modify(cls, args):
         pass
 
-
     # resource删除判断
+
     @staticmethod
     @comfirm_del
     def delete(args):
@@ -291,15 +315,14 @@ class Res():
         elif not args.node:
             esc.stor.delete_resource_all(args.resource)
 
-
     @classmethod
-    def show(cls,args):
+    def show(cls, args):
         tb = linstordb.OutputData()
         if args.nocolor:
             tb.show_res_one(args.resource) if args.resource else tb.res_all()
         else:
             if args.resource:
-                #%(asctime)s - [%(username)s] - [%(type)s] - [%(describe1)s] - [%(describe2)s] - [%(cmd)s]
+                # %(asctime)s - [%(username)s] - [%(type)s] - [%(describe1)s] - [%(describe2)s] - [%(cmd)s]
                 # _logger.InputLogger.debug('resource show', extra={'username': _collector.get_username(),'type':'usercli','describe1':'','describe2':'','cmd':'stor r s'})
                 tb.show_res_one_color(args.resource)
             else:
@@ -311,28 +334,34 @@ class Res():
                     # _logger.OutputLogger.debug(str(traceback.format_exc()), extra={"result": "SUCCESS"})
 
 
-#storage pool
+# storage pool
 class SP():
     def __init__(self):
         pass
 
     @classmethod
-    def create(cls,args,parser):
+    def create(cls, args, parser):
         parser_create = parser.sp_create
 
         if args.storagepool and args.node:
             if args.lvm:
                 if args.gui:
-                    data = pickle.dumps(esc.stor.create_storagepool_lvm(args.node, args.storagepool, args.lvm))
+                    data = pickle.dumps(
+                        esc.stor.create_storagepool_lvm(
+                            args.node, args.storagepool, args.lvm))
                     sundry.send_via_socket(data)
                 else:
-                    esc.stor.create_storagepool_lvm(args.node, args.storagepool, args.lvm)
+                    esc.stor.create_storagepool_lvm(
+                        args.node, args.storagepool, args.lvm)
             elif args.tlv:
                 if args.gui:
-                    data = pickle.dumps(esc.stor.create_storagepool_thinlv(args.node, args.storagepool, args.tlv))
+                    data = pickle.dumps(
+                        esc.stor.create_storagepool_thinlv(
+                            args.node, args.storagepool, args.tlv))
                     sundry.send_via_socket(data)
                 else:
-                    esc.stor.create_storagepool_thinlv(args.node, args.storagepool, args.tlv)
+                    esc.stor.create_storagepool_thinlv(
+                        args.node, args.storagepool, args.tlv)
             else:
                 parser_create.print_help()
         else:
@@ -347,14 +376,15 @@ class SP():
     def delete(args):
         esc.stor.delete_storagepool(args.node, args.storagepool)
 
-
     @classmethod
-    def show(cls,args):
+    def show(cls, args):
         tb = linstordb.OutputData()
         if args.nocolor:
-            tb.show_sp_one(args.storagepool) if args.storagepool else tb.sp_all()
+            tb.show_sp_one(
+                args.storagepool) if args.storagepool else tb.sp_all()
         else:
-            tb.show_sp_one_color(args.storagepool) if args.storagepool else tb.sp_all_color()
+            tb.show_sp_one_color(
+                args.storagepool) if args.storagepool else tb.sp_all_color()
 
 
 class Snap():
@@ -497,7 +527,7 @@ class Host():
     # host查询
     @classmethod
     def host_show(cls, args, js):
-        if args.show == 'all' or args.show == None:
+        if args.show == 'all' or args.show is None:
             hosts = js.get_data("Host")
             print(" " + "{:<15}".format("Hostname") + "Iqn")
             print(" " + "{:<15}".format("---------------") + "---------------")
@@ -517,7 +547,8 @@ class Host():
         print("Delete the host <", args.iqnname, "> ...")
         if js.check_key('Host', args.iqnname):
             if js.check_value('HostGroup', args.iqnname):
-                print("Fail! The host in ... hostgroup, Please delete the hostgroup first.")
+                print(
+                    "Fail! The host in ... hostgroup, Please delete the hostgroup first.")
                 return False
             else:
                 js.delete_data('Host', args.iqnname)
@@ -540,7 +571,7 @@ class Disk():
         for d in linstorlv:
             disks.update({d[1]: d[5]})
         js.up_data('Disk', disks)
-        if args.show == 'all' or args.show == None:
+        if args.show == 'all' or args.show is None:
             print(" " + "{:<15}".format("Diskname") + "Path")
             print(" " + "{:<15}".format("---------------") + "---------------")
             for k in disks:
@@ -560,7 +591,10 @@ class Hostgroup():
         print("Hostgroup name:", args.hostgroupname)
         print("Host name:", args.iqnname)
         if js.check_key('HostGroup', args.hostgroupname):
-            print("Fail! The HostGroup " + args.hostgroupname + " already existed.")
+            print(
+                "Fail! The HostGroup " +
+                args.hostgroupname +
+                " already existed.")
             return False
         else:
             t = True
@@ -579,7 +613,7 @@ class Hostgroup():
     # hostgroup查询
     @classmethod
     def hostgroup_show(cls, args, js):
-        if args.show == 'all' or args.show == None:
+        if args.show == 'all' or args.show is None:
             print("Hostgroup:")
             hostgroups = js.get_data("HostGroup")
             for k in hostgroups:
@@ -617,7 +651,10 @@ class Diskgroup():
         print("Diskgroup name:", args.diskgroupname)
         print("Disk name:", args.diskname)
         if js.check_key('DiskGroup', args.diskgroupname):
-            print("Fail! The DiskGroup " + args.diskgroupname + " already existed.")
+            print(
+                "Fail! The DiskGroup " +
+                args.diskgroupname +
+                " already existed.")
             return False
         else:
             t = True
@@ -636,7 +673,7 @@ class Diskgroup():
     # diskgroup查询
     @classmethod
     def show(cls, args, js):
-        if args.show == 'all' or args.show == None:
+        if args.show == 'all' or args.show is None:
             print("Diskgroup:")
             diskgroups = js.get_data("DiskGroup")
             for k in diskgroups:
@@ -670,6 +707,7 @@ class Diskgroup():
 class Map():
     obj_map = esc.iscsi_map()
     # map创建
+
     @classmethod
     def create(cls, args, js):
         print("Map name:", args.mapname)
@@ -685,13 +723,14 @@ class Map():
             print("Can't find " + args.dg)
             return False
         else:
-            if js.check_value('Map', args.dg) == True:
+            if js.check_value('Map', args.dg):
                 print("The diskgroup already map")
                 return False
             else:
                 crmdata = cls.obj_map.crm_up(js)
                 if crmdata:
-                    mapdata = cls.obj_map.map_data(js, crmdata, args.hg, args.dg)
+                    mapdata = cls.obj_map.map_data(
+                        js, crmdata, args.hg, args.dg)
                     if cls.obj_map.map_crm_c(mapdata):
                         js.creat_data('Map', args.mapname, [args.hg, args.dg])
                         print("Create success!")
@@ -705,7 +744,7 @@ class Map():
     @classmethod
     def show(cls, args, js):
         crmdata = cls.obj_map.crm_up(js)
-        if args.show == 'all' or args.show == None:
+        if args.show == 'all' or args.show is None:
             print("Map:")
             maps = js.get_data("Map")
             for k in maps:
@@ -731,15 +770,16 @@ class Map():
     def delete(cls, args, js):
         print("Delete the map <", args.mapname, ">...")
         if js.check_key('Map', args.mapname):
-            print(js.get_data('Map').get(args.mapname), "will probably be affected ")
+            print(
+                js.get_data('Map').get(
+                    args.mapname),
+                "will probably be affected ")
             resname = cls.obj_map.map_data_d(js, args.mapname)
             if cls.obj_map.map_crm_d(resname):
                 js.delete_data('Map', args.mapname)
                 print("Delete success!")
         else:
             print("Fail! Can't find " + args.mapname)
-
-
 
 
 if __name__ == '__main__':
