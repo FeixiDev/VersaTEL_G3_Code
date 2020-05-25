@@ -30,30 +30,35 @@ class Log(object):
         # self._log_dir = log_dir
         # self._log_name = log_name
         logging.config.fileConfig('logging_CLI.conf')
-        self.CLILogger = self.logger_cli()
-        # self.OutputLogger = self.logger_output()
+        self.InputLogger = self.logger_input()
+        self.OutputLogger = self.logger_output()
         self.LocalLogger = self.logger_local()
         # self.GUILogger = self.logger_gui() # GUI only, temporarily stored
-        # here
 
-    def logger_cli(self):
-        Logger_cli = logging.getLogger('cli')
 
-        # %(asctime)s - [%(username)s] - [%(type)s] - [%(describe1)s] - [%(describe2)s] - [%(cmd)s]
+    def logger_input(self):
+        Logger_cli = logging.getLogger('cli_input')
+
+        # %(asctime)s - [%(username)s] - [%(type)s] - [%(describe1)s] - [%(describe2)s] - [%(data)s]
         extra_dict = {
             "username": "USERNAME",
             "type": "TYPE",
-            "describe1": "DESCRIBE",
-            "describe2": "DESCRIBE",
-            "data": "DATA"}
+            "describe1": "",
+            "describe2": "",
+            "data": ""}
         # 获取一个自定义LoggerAdapter类的实例
         logger = MyLoggerAdapter(Logger_cli, extra_dict)
         return logger
 
     def logger_output(self):
         Logger_Output = logging.getLogger('cli_output')
-        # %(asctime)s - %(name)s - %(levelname)s - %s(output) -  %(message)s
-        extra_dict = {"result": "RESULT"}
+        # %(asctime)s - [%(username)s] - [%(type)s] - [%(describe1)s] - [%(describe2)s] - [%(data)s]
+        extra_dict = {
+            "username": "USERNAME",
+            "type": "TYPE",
+            "describe1": "",
+            "describe2": "",
+            "data": ""}
         # 获取一个自定义LoggerAdapter类的实例
         logger = MyLoggerAdapter(Logger_Output, extra_dict)
         return logger

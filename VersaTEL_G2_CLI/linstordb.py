@@ -568,22 +568,22 @@ class OutputData(DataProcess):
             info_second = self.node_one_color(node)
             info_third = self.node_stp_one_color(node)
             result = '\n'.join([info_first, str(info_second), str(info_third)])
-            _logger.CLILogger.debug(
-                'node show',
+            _logger.OutputLogger.debug(
+                '',
                 extra={
                     'username': _collector.get_username(),
-                    'type': 'usercli',
-                    'describe1': 'stor n s',
-                    'describe2': 'describe2',
+                    'type': 'result_to_show',
+                    'describe1': '',
+                    'describe2': '',
                     'data': result})
         except TypeError:
-            _logger.CLILogger.debug(
-                'node show',
+            _logger.InputLogger.debug(
+                '',
                 extra={
                     'username': _collector.get_username(),
-                    'type': 'usercli',
-                    'describe1': 'stor n s',
-                    'describe2': 'describe2',
+                    'type': 'result_to_show',
+                    'describe1': '',
+                    'describe2': '',
                     'data': str(
                         traceback.format_exc())})
             print('Node %s does not exist.' % node)
@@ -597,13 +597,13 @@ class OutputData(DataProcess):
             info_second = self.node_one(node)
             info_third = self.node_stp_one(node)
             result = '\n'.join([info_first, str(info_second), str(info_third)])
-            _logger.CLILogger.debug(
+            _logger.InputLogger.debug(
                 'node show',
                 extra={
                     'username': _collector.get_username(),
-                    'type': 'usercli',
-                    'describe1': 'stor n s --no-color',
-                    'describe2': 'describe2',
+                    'type': 'result_to_show',
+                    'describe1': '',
+                    'describe2': '',
                     'data': result})
         except TypeError:
             print('Node %s does not exist.' % node)
@@ -645,13 +645,13 @@ class OutputData(DataProcess):
             f.write(str(self.res_one_color(res)))
             result = f.getvalue()
             print(result)
-            _logger.GUILogger.debug(
+            _logger.InputLogger.debug(
                 'resource show',
                 extra={
                     'username': _collector.get_username(),
-                    'type': 'usercli',
-                    'describe1': 'stor r s',
-                    'describe2': 'describe2',
+                    'type': 'return_to_show',
+                    'describe1': '',
+                    'describe2': '',
                     'data': result})
         except TypeError:
             print('Resource %s does not exist.' % res)

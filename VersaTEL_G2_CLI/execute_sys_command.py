@@ -3,6 +3,10 @@ import re
 import subprocess
 import time
 from collections import OrderedDict
+import log
+
+_logger = log.Log()
+_collector = log.Collector()
 
 
 class crm():
@@ -285,11 +289,11 @@ class stor():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
         result = action.stdout.read()
-        if stor.judge_cmd_result_suc(str(result)):
-            return True
-        elif stor.judge_cmd_result_err(str(result)):
+        if stor.judge_cmd_result_err(str(result)):
             print(result.decode('utf-8'))
             return result.decode()
+        elif stor.judge_cmd_result_suc(str(result)):
+            return True
         if stor.judge_cmd_result_war(str(result)):
             messege_war = stor.get_war_mes(result.decode('utf-8'))
             print(messege_war)
@@ -320,9 +324,17 @@ class stor():
     def linstor_create_rd(res):
         cmd_rd = 'linstor rd c %s' % res
         result = stor.execute_cmd(cmd_rd)
-        if result:
+        if result is True:
             return True
         else:
+            _logger.InputLogger.error(
+                'create res',
+                extra={
+                    'username': _collector.get_username(),
+                    'type': 'return_to_show',
+                    'describe1': result,
+                    'describe2': '',
+                    'data': 'FAIL'})
             print('FAIL')
             return result
 
@@ -330,7 +342,7 @@ class stor():
     def linstor_create_vd(res, size):
         cmd_vd = 'linstor vd c %s %s' % (res, size)
         result = stor.execute_cmd(cmd_vd)
-        if result:
+        if result is True:
             return True
         else:
             print('FAIL')
@@ -341,15 +353,30 @@ class stor():
     @staticmethod
     def create_res_auto(res, size, num):
         cmd = 'linstor r c %s --auto-place %d' % (res, num)
-        if stor.linstor_create_rd(
-                res) is True and stor.linstor_create_vd(res, size) is True:
+        if stor.linstor_create_rd(res) is True and stor.linstor_create_vd(res, size) is True:
             result = stor.execute_cmd(cmd)
             if result:
                 print('SUCCESS')
+                _logger.InputLogger.debug(
+                    'create res',
+                    extra={
+                        'username': _collector.get_username(),
+                        'type': 'return_to_show',
+                        'describe1': _collector.get_path(),
+                        'describe2': '',
+                        'data': 'SUCCESS'})
                 return True
             else:
                 print('FAIL')
                 stor.linstor_delete_rd(res)
+                _logger.InputLogger.debug(
+                    'create res',
+                    extra={
+                        'username': _collector.get_username(),
+                        'type': 'return_to_show',
+                        'describe1': result,
+                        'describe2': '',
+                        'data': 'FAIL'})
                 return result
 
         # 创建resource 手动
@@ -524,7 +551,7 @@ class stor():
 
     # 创建集群节点
     @staticmethod
-    def create(node, ip, nt):
+    def create_node(node, ip, nt):
         cmd = 'linstor node create %s %s  --node-type %s' % (node, ip, nt)
         nt_value = [
             'Combined',

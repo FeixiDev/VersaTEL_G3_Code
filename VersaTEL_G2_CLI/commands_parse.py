@@ -155,7 +155,7 @@ class Node():
                     args.node,
                     args.ip,
                     args.nodetype))
-            sundry.socket_send_result(data)
+            sundry.send_via_socket(data)
 
         elif args.node and args.nodetype and args.ip:
             esc.stor.create_node(args.node, args.ip, args.nodetype)
@@ -181,6 +181,14 @@ class Node():
                 tb.node_all()
         else:
             if args.node:
+                _logger.InputLogger.debug(
+                    '',
+                    extra={
+                        'username': _collector.get_username(),
+                        'type': 'cli_user_input',
+                        'describe1': _collector.get_path(),
+                        'describe2': '',
+                        'data': 'vtel stor n s %s'%args.node})
                 tb.show_node_one_color(args.node)
             else:
                 tb.node_all_color()
@@ -252,17 +260,15 @@ class Res():
                 sys.exit(0)
             # 自动创建条件判断，符合则执行
             if all(list_auto_required) and not any(list_auto_forbid):
-                esc.stor.create_res_auto(args.resource, args.size, args.num)
-                _logger.CLILogger.debug(
+                _logger.InputLogger.debug(
                     'create res',
                     extra={
                         'username': _collector.get_username(),
                         'type': 'usercli',
-                        'describe1': 'stor r c %s -s %s -a -num %d' % (args.resource,
-                                                                       args.size,
-                                                                       args.num),
-                        'describe2': 'describe2',
-                        'data': 'SUCCESS'})
+                        'describe1': _collector.get_path(),
+                        'describe2': '',
+                        'data': 'vtel stor r c %s -s %s -a -num %d'%(args.resource,args.size,args.num)})
+                esc.stor.create_res_auto(args.resource, args.size, args.num)
             # 手动创建条件判断，符合则执行
             elif all(list_manual_required) and not any(list_manual_forbid):
                 try:
