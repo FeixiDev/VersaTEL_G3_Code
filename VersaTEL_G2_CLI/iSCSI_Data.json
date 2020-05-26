@@ -1,0 +1,53 @@
+{
+    "Host": {
+        "htest2": "iqn.2020-02.org.debian:02:bc333iscs3b",
+        "HostB": "iqn.xxxx:bb",
+        "HostA": "iqn.xxxx:aa",
+        "htest1": "iqn.1993-08.org.debian:01:bc429d5fc3b"
+    },
+    "DiskGroup": {
+        "dgtest": [
+            "zane1",
+            "zane2"
+        ],
+        "DiskGroup1": [
+            "apple",
+            "banana"
+        ]
+    },
+    "Map": {
+        "Map1": [
+            "HostGroup1",
+            "DiskGroup1"
+        ]
+    },
+    "HostGroup": {
+        "paulhost": [
+            "HostA",
+            "HostB"
+        ],
+        "HostGroup1": [
+            "HostA",
+            "HostB"
+        ],
+        "test": [
+            "htest1",
+            "htest2"
+        ]
+    },
+    "crm": {
+        "vip": [],
+        "target": [],
+        "resource": []
+    },
+    "Target": {
+        "Target3": "iqn.xxx",
+        "Target2": "iqn.xxx",
+        "Target1": "iqn.xxx"
+    },
+    "Disk": {
+        "res_b": "/dev/drbd1001",
+        "res_test": "/dev/drbd1002",
+        "res_a": "/dev/drbd1000"
+    }
+}
