@@ -33,13 +33,16 @@ class CRM():
         # print("crmconfig:",crmconfig)
         return crmconfig
 
+#-m:linstor in Class CRM?
     def get_data_linstor(self):
         linstorres = subprocess.getoutput('linstor --no-color --no-utf8 r lv')
         print("do linstor r lv")
         return linstorres
 
+#-m:
     def createres(self, res, hostiqn, targetiqn):
         initiator = " ".join(hostiqn)
+        #-m:这个操作..
         lunid = str(int(res[1][1:]))
         op = " op start timeout=40 interval=0" \
              " op stop timeout=40 interval=0" \
@@ -60,6 +63,7 @@ class CRM():
         else:
             return False
 
+#-m:停用和检查分开
     def delres(self, res):
         # crm res stop <LUN_NAME>
         stopsub = subprocess.call("crm res stop " + res, shell=True)
@@ -95,6 +99,7 @@ class CRM():
         # crm conf colocation <COLOCATION_NAME> inf: <LUN_NAME> <TARGET_NAME>
         print("crm conf colocation co_" + res + " inf: " + res + " " + target)
         coclocation = subprocess.call(
+            #-m:先组合命令,然后再统一调用吧
             "crm conf colocation co_" +
             res +
             " inf: " +
@@ -128,12 +133,13 @@ class CRM():
     def resstart(self, res):
         # crm res start <LUN_NAME>
         print("crm res start " + res)
+        #-m:是不是要拿到执行结果,正则验证
         start = subprocess.call("crm res start " + res, shell=True)
         if start == 0:
             return True
         else:
             return False
-
+#-m:res_state
     def resstate(self, res):
         crm_show = self.get_data_crm()
         redata = self.re_data(crm_show)
@@ -148,6 +154,7 @@ class CRM():
 class LVM():
     @staticmethod
     def get_vg():
+        #-m:是否写成ssh执行结果那样,包含状态和结果.这么多执行命令都可以封装
         result_vg = subprocess.Popen(
             'vgs',
             shell=True,
@@ -165,11 +172,13 @@ class LVM():
         return result_thinlv.stdout.read().decode()
 
     @staticmethod
+    #-m:refine 是什么
     def refine_thinlv(str):
         list_tb = str.splitlines()
         list_thinlv = []
         re_ = re.compile(
             r'\s*(\S*)\s*(\S*)\s*\S*\s*(\S*)\s*\S*\s*\S*\s*\S*\s*?')
+        #-m:这个命名有问题呃,list_one是啥,是啥就是啥,按你这里命名,应该是tb in list_tb,不过不知道tb是啥
         for list_one in list_tb:
             if 'twi' in list_one:
                 thinlv_one = re_.findall(list_one)
@@ -177,6 +186,7 @@ class LVM():
         return list_thinlv
 
     @staticmethod
+    #-m:这个过程也可以提炼呃
     def refine_vg(str):
         list_tb = str.splitlines()
         list_vg = []
@@ -187,7 +197,7 @@ class LVM():
             list_vg.append(list(vg_one[0]))
         return list_vg
 
-
+#-m:类名字
 class LINSTOR():
     @staticmethod
     def get_node():
@@ -238,7 +248,7 @@ class LINSTOR():
             print('The data cannot be read, please check whether LINSTOR is normal.')
         return list_data_all
 
-
+#-m:这部分逻辑感觉有点复杂.
 def result_cmd(func):
     """
     Decorator for post processing of execution commands.
@@ -307,6 +317,7 @@ class Stor():
 
     @staticmethod
     @result_cmd
+    #-m:这部分要沟通一下
     def execute_cmd(cmd, timeout=60):
         """
         Execute the command cmd to return the content of the command output.
@@ -346,6 +357,7 @@ class Stor():
     @staticmethod
     def linstor_delete_rd(res):
         cmd = 'linstor rd d %s' % res
+        #-m:是否要统一?
         subprocess.check_output(cmd, shell=True)
 
     @staticmethod
@@ -365,6 +377,7 @@ class Stor():
 
     @staticmethod
     def linstor_create_vd(res, size):
+        #-m:那么就用f-string吧
         cmd_vd = 'linstor vd c %s %s' % (res, size)
         result = Stor.execute_cmd(cmd_vd)
         if result is True:
@@ -394,6 +407,8 @@ class Stor():
     # 创建resource 手动
     @staticmethod
     def create_res_manual(res, size, node, stp):
+        #-m:flag?
+        #-m:OrderedDict?
         flag = OrderedDict()
 
         def print_fail_node():
@@ -412,6 +427,7 @@ class Stor():
         def create_resource(cmd):
             try:
                 #Undo the decorator @result_cmd, and execute execute_cmd function
+                #-m:我们这里装饰器需要这么复杂的应用吗
                 ex_cmd = Stor.execute_cmd.__wrapped__
                 result = ex_cmd(cmd)
                 if Stor.judge_cmd_result_war(str(result)):
@@ -426,6 +442,7 @@ class Stor():
                     dict_fail = {node_one: str_fail_cause}
                     flag.update(dict_fail)
             except TimeoutError as e:
+                #-m:这个node_one是哪里定义的?
                 flag.update({node_one: 'Execution creation timeout'})
                 print('%s created timeout on node %s, the operation has been cancelled' %(res, node_one))
 
@@ -436,6 +453,7 @@ class Stor():
                     create_resource(cmd)
                 whether_delete_rd()
                 return print_fail_node()
+                #-m:感觉这个逻辑略复杂...create res可以用一个类来操作,用对象和方法简化一些调用
             else:
                 # need to be prefect
                 print('The resource already exists')
@@ -574,6 +592,7 @@ class Stor():
             print('node type error,choose from ''Combined',
                   'Controller', 'Auxiliary', 'Satellite''')
         else:
+
             return Stor.print_execute_result(cmd)
     # 删除node
 
@@ -582,7 +601,7 @@ class Stor():
         cmd = 'linstor node delete %s' % node
         return Stor.print_execute_result(cmd)
 
-
+#-m:这边看起来就有点不知所云了
 class Iscsi():
 
     # 获取并更新crm信息

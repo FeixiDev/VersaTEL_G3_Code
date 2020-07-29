@@ -18,6 +18,7 @@ from commands import (
     MapCommands
 )
 
+#-m:
 class MyArgumentParser(argparse.ArgumentParser):
     def parse_args(self, args=None, namespace=None):
         args, argv = self.parse_known_args(args, namespace)
