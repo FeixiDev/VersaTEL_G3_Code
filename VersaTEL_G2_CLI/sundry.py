@@ -359,3 +359,21 @@ def handle_exception():
 
 
 
+# 删除指定的initiator
+def remove_list(list_now, list_del):
+    """
+    删除指定的iqn
+    :param iqn_now:list
+    :param iqn_del:list
+    :return:list
+    """
+    for i in list_del:
+        list_now.remove(i)
+    return list_now
+
+def append_list(list_now, list_append):
+    list_now.extend(list_append)
+    return list(set(list_now))
+
+
+

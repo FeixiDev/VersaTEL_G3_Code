@@ -216,6 +216,7 @@ class CRMConfig():
             return True
 
     def change_initiator(self, res, iqns):
+        iqns = ' '.join(iqns)
         cmd = f"crm config set {res}.allowed_initiators \"{iqns}\""
         result = execute_crm_cmd(cmd)
         if result['sts']:

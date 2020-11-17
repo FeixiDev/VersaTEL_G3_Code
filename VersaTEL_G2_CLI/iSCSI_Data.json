@@ -1,10 +1,10 @@
 {
     "Host": {
-        "h1": "iqn.2020-11.com.example:pytest01",
+        "h1": "iqn.2020-11.com.example:pytest01_1",
         "h2": "iqn.2020-11.com.example:pytest02",
         "h3": "iqn.2020-11.com.example:pytest03",
         "h4": "iqn.2020-11.com.example:pytest04",
-        "h5": "iqn.2020-11.com.example:pytest09"
+        "h5": "iqn.2020-11.com.example:pytest05"
     },
     "Disk": {
         "res_a": "/dev/drbd1000",
@@ -21,8 +21,16 @@
             "h4"
         ],
         "hg3": [
-            "h1",
+            "h5",
             "h3"
+        ],
+        "hg_test": [
+            "hg_test"
+        ],
+        "map_test": [
+            "hg2",
+            "hg3",
+            "hg1"
         ]
     },
     "DiskGroup": {
@@ -48,7 +56,7 @@
         },
         "map2": {
             "HostGroup": [
-                "hg1",
+                "hg2",
                 "hg3"
             ],
             "DiskGroup": [
@@ -64,7 +72,7 @@
                 "iqn.2020-04.feixitek.com:versaplx00",
                 "0",
                 "/dev/drbd1000",
-                "iqn.2020-11.com.example:pytest04 iqn.2020-11.com.example:pytest02 iqn.2020-11.com.example:pytest01 iqn.2020-11.com.example:pytest03",
+                "iqn.2020-11.com.example:pytest02 iqn.2020-11.com.example:pytest01",
                 "Started"
             ],
             [
@@ -72,7 +80,7 @@
                 "iqn.2020-04.feixitek.com:versaplx00",
                 "1",
                 "/dev/drbd1001",
-                "iqn.2020-11.com.example:pytest04 iqn.2020-11.com.example:pytest02 iqn.2020-11.com.example:pytest01 iqn.2020-11.com.example:pytest03",
+                "iqn.2020-11.com.example:pytest02 iqn.2020-11.com.example:pytest01",
                 "Started"
             ],
             [
@@ -80,7 +88,7 @@
                 "iqn.2020-04.feixitek.com:versaplx00",
                 "2",
                 "/dev/drbd1002",
-                "iqn.2020-11.com.example:pytest04 iqn.2020-11.com.example:pytest02 iqn.2020-11.com.example:pytest01 iqn.2020-11.com.example:pytest03",
+                "iqn.2020-11.com.example:pytest02 iqn.2020-11.com.example:pytest01",
                 "Started"
             ]
         ],

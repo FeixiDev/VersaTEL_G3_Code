@@ -153,6 +153,8 @@ class MapCommands():
 
             if args.remove:
                 map.remove_dg(args.map,args.remove)
+        else:
+            print('请执行一个要进行修改的资源类型-hg/-dg')
 
 
     def print_map_help(self, *args):
