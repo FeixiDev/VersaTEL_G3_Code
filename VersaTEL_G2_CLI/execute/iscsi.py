@@ -368,10 +368,6 @@ class Map():
         if not self.pre_check_create_map(map, hg_list, dg_list):
             return
 
-        # 检查disk是否已map过
-        # if self.check_dg_map(map, hg, dg):
-        #     return True
-
         initiator = self.get_all_initiator(hg_list)
         disk_dict = self.get_all_disk(dg_list)
         obj_crm = CRMConfig()
