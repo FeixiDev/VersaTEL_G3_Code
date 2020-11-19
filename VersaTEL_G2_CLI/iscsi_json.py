@@ -52,9 +52,13 @@ class JsonOperation():
         else:
             list_member = self.get_data(iscsi_type)[target]
         list_member.extend(member)
-        self.add_data(iscsi_type,target,list(set(list_member)))
 
-
+        if type == 'Map':
+            dict_map = self.get_data('Map')[target]
+            dict_map.update({iscsi_type:list_member})
+            self.add_data('Map',target,dict_map)
+        else:
+            self.add_data(iscsi_type, target, list(set(list_member)))
 
 
     def remove_member(self,iscsi_type,target,member,type=None):
@@ -64,10 +68,18 @@ class JsonOperation():
             list_member = self.get_data('Map')[target][iscsi_type]
         else:
             list_member = self.get_data(iscsi_type)[target]
+
+        print('1:',list_member)
+        print('2:',member)
         for i in member:
             list_member.remove(i)
-        self.add_data(iscsi_type,target,list(set(list_member)))
 
+        if type == 'Map':
+            dict_map = self.get_data('Map')[target]
+            dict_map.update({iscsi_type:list_member})
+            self.add_data('Map',target,dict_map)
+        else:
+            self.add_data(iscsi_type, target, list(set(list_member)))
 
 
     # 删除Host、HostGroup、DiskGroup、Map
@@ -174,29 +186,33 @@ class JsonOperation():
         return list_host
 
 
-    def get_map_by_hg(self,hg):
+    def get_map_by_group(self,type,group):
         """
-        通过hg取到使用这个hg的所有map
-        :param hg:
-        :return:list
+        通过hg/dg取到使用这个hg的所有map
+        :param type: "HostGroup"/"DiskGroup"
+        :param group: hg/dg
+        :return:
         """
         list_map = []
         for map,map_member in self.json_data['Map'].items():
-            if hg in map_member['HostGroup']:
+            if group in map_member[type]:
                 list_map.append(map)
         return list_map
 
 
 
-    def get_disk_by_dg(self,list_dg):
+    def get_disk_by_dg(self,dg):
         """
-        通过list_dg获取到所有disk
-        :param list_dg:
+        dg
+        :param dg:
         :return:
         """
+        if not isinstance(dg,list):
+            dg = [dg]
+
         list_disk = []
-        for dg in list_dg:
-            list_disk+=self.get_data('DiskGroup')[dg]
+        for dg_one in dg:
+            list_disk+=self.get_data('DiskGroup')[dg_one]
         return list(set(list_disk))
 
 
@@ -204,7 +220,7 @@ class JsonOperation():
         list_map = []
         list_hg = self.get_hg_by_host(host)
         for hg in list_hg:
-            list_map+=self.get_map_by_hg(hg)
+            list_map+=self.get_map_by_group('HostGroup',hg)
         return list_map
 
     def get_map_by_disk(self, disk):
@@ -261,17 +277,56 @@ class JsonOperation():
         return list(set(list_iqn))
 
 
+    def get_dg_by_disk(self,disk):
+        list_dg = []
+        if not isinstance(disk,list):
+            disk = [disk]
+
+        dict_dg = self.get_data('DiskGroup')
+        for disk_one in disk:
+            for dg,member in dict_dg.items():
+                if disk_one in member:
+                    list_dg.append(dg)
+
+        return list(set(list_dg))
+
+
+
+
+
+    def get_disk_by_hg(self,hg):
+        list_map = self.get_map_by_group('HostGroup',hg)
+        list_disk = []
+        for map in list_map:
+            for disk in self.get_disk_by_dg(self.get_data('Map')[map]['DiskGroup']):
+                list_disk.append(disk)
+        return list(set(list_disk))
+
+
     def get_disk_by_map(self,map):
+        "获取disk列表"
         list_dg = []
         for dg in self.get_data('Map')[map]["DiskGroup"]:
             list_dg.append(dg)
         return self.get_disk_by_dg(list_dg)
 
 
+    def get_disk_by_host(self,host):
+        list_map = self.get_map_by_host(host)
+        list_disk = []
+        for map in list_map:
+            for disk in self.get_disk_by_dg(self.get_data('Map')[map]['DiskGroup']):
+                list_disk.append(disk)
+        return list(set(list_disk))
+
     def get_iqn_by_map(self, map):
-        hg_list = self.get_data('Map')[map]['HostGroup']
-        iqn_list = self.get_iqn_by_hglist(hg_list)
-        return iqn_list
+        list_iqn = []
+        if not isinstance(map,list):
+            map = [map]
+        for map_one in map:
+            hg_list = self.get_data('Map')[map_one]['HostGroup']
+            list_iqn.extend(self.get_iqn_by_hglist(hg_list))
+        return list(set(list_iqn))
 
 
     def get_iqn_by_hglist(self,hg_list):
@@ -281,4 +336,5 @@ class JsonOperation():
                 iqn = self.get_data('Host')[host]
                 iqn_list.append(iqn)
         return list(set(iqn_list))
+
 
