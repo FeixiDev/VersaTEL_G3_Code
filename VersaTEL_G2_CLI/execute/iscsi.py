@@ -214,29 +214,27 @@ class DiskGroup():
                 print(f'{dg}中不存在成员{disk}，无法进行移除')
                 return
 
-        list_map = self.js.get_map_by_group('DiskGroup', dg)
-        print(f'从{dg}移除成员{",".join(list_disk)}会影响到已存在的map:{",".join(list_map)}? yes/no')
-        answer = input()
-        if not answer in ['y', 'yes', 'Y', 'YES']:
-            print('退出')
-            return
-
-        obj_crm = CRMConfig()
-
-        iqn_del = []
-        # 找到用到dg的所有map的所有hg的所有host的iqn
-        for map in list_map:
-            iqn_del += self.js.get_iqn_by_map(map)
         for disk in list_disk:
-            iqn = self.js.get_res_initiator(disk)
-            list_iqn = s.remove_list(iqn,iqn_del)
-            if not list_iqn:
+            list_map = self.js.get_map_by_disk(disk)
+            if list_map:
+                print(f'从{dg}移除成员{",".join(list_disk)}会影响到已存在的map:{",".join(list_map)}? yes/no')
+                answer = input()
+                if not answer in ['y', 'yes', 'Y', 'YES']:
+                    print('退出')
+                    return
+                dg_list = s.remove_list(self.js.get_dg_by_disk(disk), dg)
+                obj_crm = CRMConfig()
+                if dg_list:
+                    iqn_list = []
+                    for dg in dg_list:
+                        map_list = self.js.get_map_by_group("DiskGroup", dg)
+                        iqn_list.append(self.js.get_iqn_by_map(map_list))
+                    if iqn_list:
+                        obj_crm.change_initiator(disk, iqn_list)
+                        return
                 obj_crm.delete_res(disk)
-            else:
-                obj_crm.change_initiator(disk,list_iqn)
 
-        # 配置文件移除成员
-        self.js.remove_member('DiskGroup', dg, list_disk)
+            self.js.remove_member('DiskGroup', dg, disk)
 
 
     """

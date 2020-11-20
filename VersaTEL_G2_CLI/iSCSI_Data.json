@@ -26,20 +26,11 @@
         "hg3": [
             "h5",
             "h3"
-<<<<<<< HEAD
-=======
-        ],
-        "hg4": [
-            "h6"
-        ],
-        "hg5": [
-            "h7"
->>>>>>> bebbb68d989b8cd26fb7d8a414b9603f2a5ed1ef
         ]
     },
     "DiskGroup": {
         "dg1": [
-            "res_a",
+            "res_c",
             "res_b"
         ],
         "dg2": [
@@ -49,33 +40,17 @@
         "dg3": [
             "res_d",
             "res_c"
+        ],
+        "dg4": [
+            "res_a",
+            "res_b",
+            "res_c"
         ]
     },
     "Map": {
         "map1": {
             "HostGroup": [
-                "hg1",
-                "hg2"
-            ],
-            "DiskGroup": [
-                "dg1",
-                "dg2"
-            ]
-        },
-        "map2": {
-            "HostGroup": [
-                "hg1",
-                "hg3"
-            ],
-            "DiskGroup": [
-                "dg1",
-                "dg3"
-            ]
-        },
-        "map3": {
-            "HostGroup": [
-                "hg1",
-                "hg3"
+                "hg1"
             ],
             "DiskGroup": [
                 "dg1"
@@ -83,6 +58,20 @@
         }
     },
     "crm": {
-
+        "resource": [],
+        "vip": [
+            [
+                "vip",
+                "10.203.1.75",
+                "24"
+            ]
+        ],
+        "target": [
+            [
+                "t_test",
+                "iqn.2020-04.feixitek.com:versaplx00",
+                "10.203.1.75"
+            ]
+        ]
     }
 }
