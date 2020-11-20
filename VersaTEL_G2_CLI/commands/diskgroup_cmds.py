@@ -77,6 +77,41 @@ class DiskGroupCommands():
 
         dg_parser.set_defaults(func=self.print_dg_help)
 
+
+        """
+        Modify HostGroup
+        """
+        p_modify_dg = dg_subp.add_parser(
+            'modify',
+            aliases='m',
+            help='diskgroup modify [hostgroup_name] [-a disk_name1] [-d disk_name2] ...')
+
+
+        p_modify_dg.add_argument(
+            'diskgroup',
+            help='diskgroup_name')
+
+        p_modify_dg.add_argument(
+            '-a',
+            '--add',
+            dest='add',
+            action='store',
+            help='disk name',
+            metavar='DISK',
+            nargs='+')
+
+        p_modify_dg.add_argument(
+            '-r',
+            '--remove',
+            dest='remove',
+            action='store',
+            help='disk name',
+            metavar='DISK',
+            nargs='+')
+
+        p_modify_dg.set_defaults(func=self.modify)
+
+
     @sd.deco_record_exception
     def create(self, args):
         diskgroup = ex.DiskGroup()
@@ -94,6 +129,15 @@ class DiskGroupCommands():
     def delete(self, args):
         diskgroup = ex.DiskGroup()
         diskgroup.delete_diskgroup(args.diskgroup)
+
+
+    def modify(self, args):
+        diskgroup = ex.DiskGroup()
+        if args.add:
+            diskgroup.add_disk(args.diskgroup,args.add)
+        if args.remove:
+            diskgroup.remove_disk(args.diskgroup,args.remove)
+
 
     def print_dg_help(self, *args):
         self.dg_parser.print_help()

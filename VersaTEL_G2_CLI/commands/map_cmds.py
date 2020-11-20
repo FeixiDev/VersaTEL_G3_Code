@@ -140,17 +140,14 @@ class MapCommands():
     @sd.deco_record_exception
     def modify(self, args):
         map = ex.Map()
-
         if args.hg:
             if args.add:
                 map.add_hg(args.map,args.add)
-
             if args.remove:
                 map.remove_hg(args.map,args.remove)
         elif args.dg:
             if args.add:
                 map.add_dg(args.map,args.add)
-
             if args.remove:
                 map.remove_dg(args.map,args.remove)
         else:

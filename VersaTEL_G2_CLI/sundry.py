@@ -367,9 +367,13 @@ def remove_list(list_now, list_del):
     :param iqn_del:list
     :return:list
     """
-    for i in list_del:
+    # if set(list_now) == set(list_del):
+    #     return []
+    #
+    list_now = set(list_now)
+    for i in set(list_del):
         list_now.remove(i)
-    return list_now
+    return list(list_now)
 
 def append_list(list_now, list_append):
     list_now.extend(list_append)
