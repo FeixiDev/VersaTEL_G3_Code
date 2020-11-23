@@ -364,24 +364,33 @@ class HostGroup():
 
 
         # 计数的方式2：
-        dict_disk_count, dict_disk_pair = self.js.count_disk_data()
-        dict_disk_count_del, dict_disk_pair_del = self.js.count_disk_data(target=hg,member=list_host,type='remove_host')
-        for pair,num in dict_disk_pair_del.items():
-            print(pair)
-            num_flag = num - dict_disk_pair[pair]
-            if num_flag == 0:
-                print(num, dict_disk_pair[pair])
-                print('删除这个disk')
-            elif num_flag > 0:
-                print('无事发生')
-                continue
-            else:
-                print(f'修改这个disk的iqn')
 
+        dict_disk_count, dict_disk_pair = self.js.count_disk_data()
+        dict_disk_pair_del = self.js.count_del_host(hg, list_host)
+
+        print(dict_disk_pair_del)
+
+        disk_del = {}
+        for pair, num in dict_disk_pair_del.items():
+            flag_num = dict_disk_pair[pair] - num
+            if flag_num == 0:
+                disk, host = pair.split('-')
+                iqn = self.js.get_data('Host')[host]
+                if disk in disk_del.keys():
+                    disk_del[disk].append(iqn)
+                else:
+                    disk_del.update({disk: [iqn]})
+
+        obj_crm = CRMConfig()
+        for disk in disk_del:
+            iqn_before = self.js.get_res_initiator(disk)
+            iqn_now = s.remove_list(iqn_before,disk_del[disk])
+            print(f'修改{disk}的iqn为{iqn_now}')
+            obj_crm.change_initiator(disk, disk_del[disk])
 
 
         # 最后在配置文件中删除
-        # self.js.remove_member('HostGroup', hg, list_host)
+        self.js.remove_member('HostGroup', hg, list_host)
 
     """
     map操作
@@ -707,32 +716,37 @@ class Map():
 
         obj_crm = CRMConfig()
 
+        dict_disk_count, dict_disk_pair = self.js.count_disk_data()
+        dict_disk_count_del, dict_disk_pair_del = self.js.count_del_dg(map,list_dg)
 
-        list_host = []
-        list_disk = self.js.get_disk_by_dg(list_dg)
-        list_hg = self.js.get_data('Map')[map]['HostGroup']
-        for hg in list_hg:
-            list_host=s.append_list(list_host,self.js.get_data('HostGroup')[hg])
+        disk_del = {}
+        for pair,num in dict_disk_pair_del.items():
+            flag_num = dict_disk_pair[pair] - num
+            if flag_num == 0:
+                disk,host = pair.split('-')
+                iqn = self.js.get_data('Host')[host]
+                if disk in disk_del.keys():
+                    disk_del[disk].append(iqn)
+                else:
+                    disk_del.update({disk:[iqn]})
+            else:
+                continue
 
-        dict_disk_count,dict_disk_pair = self.js.count_disk_data(type='remove_dg',target=map)
-        print(dict_disk_pair)
-        print(dict_disk_count)
+        for disk,num in dict_disk_count_del.items():
+            flag_num = dict_disk_count[disk] - num
+            if flag_num == 0:
+                print(f'删除{disk}')
+                # obj_crm.delete_res(disk)
+                disk_del.pop(disk)
+            else:
+                continue
 
-        # for disk in list_disk:
-        #     if dict_disk_count[disk]-1 == 0:
-        #         print('删除这个disk')
-        #         obj_crm.delete_res(disk)
-        #     list_iqn_delete = []
-        #     for host in list_host:
-        #         if dict_disk_pair[f'{disk}-{host}']-1 == 0:
-        #             iqn_delete = self.js.get_data('Host')[host]
-        #             list_iqn_delete.append(iqn_delete)
-        #
-        #     list_iqn_before = self.js.get_res_initiator(disk)
-        #     iqn = s.remove_list(list_iqn_before,list_iqn_delete)
-        #     if list_iqn_before == iqn:
-        #         continue
-        #     obj_crm.change_initiator(disk, iqn)
+        for disk in disk_del:
+            iqn_before = self.js.get_res_initiator(disk)
+            iqn_now = s.remove_list(iqn_before,disk_del[disk])
+            obj_crm.change_initiator(disk,iqn_now)
 
-        #配置文件移除成员
-        # self.js.remove_member('DiskGroup', map, list_dg, type='Map')
+        # 配置文件移除成员
+        self.js.remove_member('DiskGroup', map, list_dg, type='Map')
+
+
