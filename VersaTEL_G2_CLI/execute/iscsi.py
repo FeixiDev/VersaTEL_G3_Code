@@ -327,8 +327,6 @@ class HostGroup():
             if not self.js.check_value_in_key("HostGroup", hg, host)['result']:
                 print(f'{hg}中不存在成员{host}，无法进行移除')
                 return
-            else:
-                print(f'remove {host}')
 
         # 交互提示：
         # list_disk = self.js.get_disk_by_hg(hg) # 去重的列表
@@ -339,34 +337,51 @@ class HostGroup():
         #     print('退出')
         #     return
 
-        # 计数的方式：
-        obj_crm = CRMConfig()
-        list_disk = []
-        # 取到跟要操作的这个hg有关系的所有disk，不进行去重
-        for map in self.js.get_data('Map'):
-            for dg in self.js.get_data('Map')[map]['DiskGroup']:
-                for disk in self.js.get_data('DiskGroup')[dg]:
-                    list_disk.append(disk)
+        # 计数的方式1：
+        # obj_crm = CRMConfig()
+        # list_disk = []
+        # # 取到跟要操作的这个hg有关系的所有disk，不进行去重
+        # for map in self.js.get_data('Map'):
+        #     for dg in self.js.get_data('Map')[map]['DiskGroup']:
+        #         for disk in self.js.get_data('DiskGroup')[dg]:
+        #             list_disk.append(disk)
+        #
+        # dict_disk_count, dict_disk_pair = self.js.count_disk_data()
+        # for disk in list_disk: # 用到这个hg的所有disk
+        #     list_iqn_delete = []
+        #     for host in list_host: #要删除的所有host
+        #         dict_disk_pair.update({f'{disk}-{host}':dict_disk_pair[f'{disk}-{host}']-1})
+        #         if dict_disk_pair[f'{disk}-{host}']  == 0:
+        #             list_iqn_delete.append(self.js.get_data('Host')[host])
+        #
+        #     #获取这个disk原来的iqn
+        #     list_iqn_before = self.js.get_res_initiator(disk)
+        #     iqn = s.remove_list(list_iqn_before, list_iqn_delete)
+        #     if list_iqn_before == iqn:
+        #         continue
+        #     print(f'修改{disk}的iqn为{iqn}')
+            # obj_crm.change_initiator(disk, iqn)
 
+
+        # 计数的方式2：
         dict_disk_count, dict_disk_pair = self.js.count_disk_data()
-        for disk in list_disk: # 用到这个hg的所有disk
-            list_iqn_delete = []
-            for host in list_host: #要删除的所有host
-                dict_disk_pair.update({f'{disk}-{host}':dict_disk_pair[f'{disk}-{host}']-1})
-                if dict_disk_pair[f'{disk}-{host}']  == 0:
-                    list_iqn_delete.append(self.js.get_data('Host')[host])
-
-            #获取这个disk原来的iqn
-            list_iqn_before = self.js.get_res_initiator(disk)
-            iqn = s.remove_list(list_iqn_before, list_iqn_delete)
-            if list_iqn_before == iqn:
+        dict_disk_count_del, dict_disk_pair_del = self.js.count_disk_data(target=hg,member=list_host,type='remove_host')
+        for pair,num in dict_disk_pair_del.items():
+            print(pair)
+            num_flag = num - dict_disk_pair[pair]
+            if num_flag == 0:
+                print(num, dict_disk_pair[pair])
+                print('删除这个disk')
+            elif num_flag > 0:
+                print('无事发生')
                 continue
-            print(f'修改{disk}的iqn为{iqn}')
-            obj_crm.change_initiator(disk, iqn)
+            else:
+                print(f'修改这个disk的iqn')
+
 
 
         # 最后在配置文件中删除
-        self.js.remove_member('HostGroup', hg, list_host)
+        # self.js.remove_member('HostGroup', hg, list_host)
 
     """
     map操作
@@ -692,29 +707,32 @@ class Map():
 
         obj_crm = CRMConfig()
 
+
         list_host = []
         list_disk = self.js.get_disk_by_dg(list_dg)
         list_hg = self.js.get_data('Map')[map]['HostGroup']
         for hg in list_hg:
             list_host=s.append_list(list_host,self.js.get_data('HostGroup')[hg])
 
-        dict_disk_count,dict_disk_pair = self.js.count_disk_data()
+        dict_disk_count,dict_disk_pair = self.js.count_disk_data(type='remove_dg',target=map)
+        print(dict_disk_pair)
+        print(dict_disk_count)
 
-        for disk in list_disk:
-            if dict_disk_count[disk]-1 == 0:
-                print('删除这个disk')
-                obj_crm.delete_res(disk)
-            list_iqn_delete = []
-            for host in list_host:
-                if dict_disk_pair[f'{disk}-{host}']-1 == 0:
-                    iqn_delete = self.js.get_data('Host')[host]
-                    list_iqn_delete.append(iqn_delete)
-
-            list_iqn_before = self.js.get_res_initiator(disk)
-            iqn = s.remove_list(list_iqn_before,list_iqn_delete)
-            if list_iqn_before == iqn:
-                continue
-            obj_crm.change_initiator(disk, iqn)
+        # for disk in list_disk:
+        #     if dict_disk_count[disk]-1 == 0:
+        #         print('删除这个disk')
+        #         obj_crm.delete_res(disk)
+        #     list_iqn_delete = []
+        #     for host in list_host:
+        #         if dict_disk_pair[f'{disk}-{host}']-1 == 0:
+        #             iqn_delete = self.js.get_data('Host')[host]
+        #             list_iqn_delete.append(iqn_delete)
+        #
+        #     list_iqn_before = self.js.get_res_initiator(disk)
+        #     iqn = s.remove_list(list_iqn_before,list_iqn_delete)
+        #     if list_iqn_before == iqn:
+        #         continue
+        #     obj_crm.change_initiator(disk, iqn)
 
         #配置文件移除成员
-        self.js.remove_member('DiskGroup', map, list_dg, type='Map')
+        # self.js.remove_member('DiskGroup', map, list_dg, type='Map')

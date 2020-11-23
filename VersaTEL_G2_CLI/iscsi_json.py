@@ -337,20 +337,48 @@ class JsonOperation():
                 iqn_list.append(iqn)
         return list(set(iqn_list))
 
-    def count_disk_data(self):
+    def count_disk_data(self,target=None,member=None,type=None):
         iscsi = self.read_json()
 
         dict_disk_count = {}
         list_disk_record = []
-
         dict_disk_pair = {}
         list_pair_record = []
-        for map in iscsi['Map'].values():
-            for dg in map['DiskGroup']:
+
+
+        def get_map(iscsi):
+            if type == 'remove_dg':
+                return [iscsi['Map'][target]]
+            else:
+                return iscsi['Map'].values()
+
+        def get_dg(map):
+            return map['DiskGroup']
+
+
+        def get_hg(map):
+            if type == 'remove_host':
+                return [target]
+            else:
+                return map['HostGroup']
+
+
+        def get_disk(dg):
+            return iscsi['DiskGroup'][dg]
+
+        def get_host(hg):
+            if type == 'remove_host':
+                return member
+            else:
+                return iscsi['HostGroup'][hg]
+
+
+        for map in get_map(iscsi):
+            for dg in get_dg(map):
                 list_disk_record.extend(iscsi['DiskGroup'][dg])
-                for hg in map['HostGroup']:
-                    for disk in iscsi['DiskGroup'][dg]:
-                        for host in iscsi['HostGroup'][hg]:
+                for hg in get_hg(map):
+                    for disk in get_disk(dg):
+                        for host in get_host(hg):
                             list_pair_record.append(f'{disk}-{host}')
 
         for disk in set(list_disk_record):
@@ -359,6 +387,7 @@ class JsonOperation():
         for pair in set(list_pair_record):
             dict_disk_pair.update({pair: list_pair_record.count(pair)})
 
+        print(dict_disk_pair)
         return dict_disk_count,dict_disk_pair
 
 

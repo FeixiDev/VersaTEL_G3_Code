@@ -86,7 +86,7 @@
                 "iqn.2020-04.feixitek.com:versaplx00",
                 "1",
                 "/dev/drbd1001",
-                "iqn.2020-11.com.example:pytest0111 iqn.2020-11.com.example:pytest02",
+                "iqn.2020-11.com.example:pytest02 iqn.2020-11.com.example:pytest0111 iqn.2020-11.com.example:pytest03 iqn.2020-11.com.example:pytest04 iqn.2020-11.com.example:pytest05",
                 "Started"
             ],
             [
@@ -94,7 +94,7 @@
                 "iqn.2020-04.feixitek.com:versaplx00",
                 "2",
                 "/dev/drbd1002",
-                "iqn.2020-11.com.example:pytest0111 iqn.2020-11.com.example:pytest02",
+                "iqn.2020-11.com.example:pytest02 iqn.2020-11.com.example:pytest0111 iqn.2020-11.com.example:pytest03 iqn.2020-11.com.example:pytest04 iqn.2020-11.com.example:pytest05",
                 "Started"
             ]
         ],
