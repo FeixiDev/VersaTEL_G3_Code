@@ -63,15 +63,17 @@ class Process_data():
         list_node = get_online_node()
         list_result = []
         index = 1
+        parentID = 1 
         for node in list_node:
             list_sp = get_ok_sp(node)
             list_result_sp = []
             for sp in list_sp:
-                dict_sp = {'name':sp[0],'node_name':node[0],'value':index}
+                dict_sp = {'name':sp[0],'node_name':node[0],'value':index,'parentId':parentID}
                 index += 1
                 list_result_sp.append(dict_sp)
             dict_one = {'name':node[0], 'children':list_result_sp}
             list_result.append(dict_one)
+            parentID += 1
             dict = {"code": 0, "msg": "", "count": 1000,"data":list_result}
         return dict
 

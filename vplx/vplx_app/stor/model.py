@@ -274,8 +274,9 @@ sp2 = {'code': 0, 'msg': '', 'count': 1000,
 
 class spView(views.MethodView):  
     def get(self):
-#         return cors_data(sp)
-        return cors_data(sp2)
+        print(sp)
+        return cors_data(sp)
+#         return cors_data(sp2)
 
     
     

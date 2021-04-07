@@ -56,10 +56,12 @@
         "map1": {
             "HostGroup": [
                 "hg6",
-                "hg1"
+                "hg1",
+                "h1"
             ],
             "DiskGroup": [
-                "DG1"
+                "DG1",
+                "Dg2"
             ]
         }
     },

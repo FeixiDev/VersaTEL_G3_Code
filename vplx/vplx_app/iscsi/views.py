@@ -34,6 +34,7 @@ iscsi_blueprint.add_url_rule('/map/show/oprt', view_func=model.OprtAllMap.as_vie
 iscsi_blueprint.add_url_rule('/map/show/data', view_func=model.AllMapResult.as_view('all_map_result'))
 
 
+
 '''
 @note: iSCSI操作/修改
 '''
