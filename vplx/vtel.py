@@ -15,6 +15,7 @@ from commands import (
     HostGroupCommands,
     MapCommands,
     PortalCommands,
+    TargetCommands,
     SyncCommands
 )
 
@@ -52,7 +53,6 @@ class VtelCLI(object):
     """
     def __init__(self):
         self.parser = MyArgumentParser(prog="vtel")
-
         self.logger = log.Log()
         self._node_commands = NodeCommands()
         self._resource_commands = ResourceCommands()
@@ -62,7 +62,8 @@ class VtelCLI(object):
         self._host_commands = HostCommands()
         self._hostgroup_commands = HostGroupCommands()
         self._map_commands = MapCommands()
-        self._vip_commands = PortalCommands()
+        self._portal_commands = PortalCommands()
+        self._target_commands = TargetCommands()
         self._sync_commands = SyncCommands()
         self._replay_commands = ReplayCommands(self.parser)
         self.setup_parser()
@@ -76,16 +77,28 @@ class VtelCLI(object):
         subp = self.parser.add_subparsers(metavar='',
                                      dest='subargs_vtel')
 
+
         self.parser.add_argument('-v',
                             '--version',
                             dest='version',
                             help='Show current version',
                             action='store_true')
 
+
+        parser_apply = subp.add_parser(
+            'apply',
+            help='Apply a configuration file',
+        )
+        parser_apply.add_argument(
+            'file',
+            help='Enter the name of the configuration file to be applied(yaml file)')
+
+
+
         parser_stor = subp.add_parser(
             'stor',
             help='Management operations for LINSTOR',
-            add_help=False,
+            add_help=True,
             formatter_class=argparse.RawTextHelpFormatter,
         )
 
@@ -112,7 +125,9 @@ class VtelCLI(object):
         self._host_commands.setup_commands(subp_iscsi)
         self._hostgroup_commands.setup_commands(subp_iscsi)
         self._map_commands.setup_commands(subp_iscsi)
-        self._vip_commands.setup_commands(subp_iscsi)
+        self._portal_commands.setup_commands(subp_iscsi)
+        self._target_commands.setup_commands(subp_iscsi)
+
         self._sync_commands.setup_commands(subp_iscsi)
 
         parser_iscsi.set_defaults(func=self.print_iscsi_help)

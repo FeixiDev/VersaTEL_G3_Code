@@ -1,7 +1,5 @@
 # coding=utf-8
-import consts
 import sundry as s
-import sys
 
 class LVM():
     def __init__(self):
@@ -27,23 +25,24 @@ class LVM():
             #s.handle_exception()
 
     def refine_thinlv(self):
-        all_lv = self.data_lv.splitlines()
-        list_thinlv = []
-        re_ = '\s*(\S*)\s*(\S*)\s*\S*\s*(\S*)\s*\S*\s*\S*\s*\S*\s*?'
-        for one in all_lv:
-            if 'twi' in one:
-                thinlv_one = s.re_findall(re_,one)
-                list_thinlv.append(list(thinlv_one[0]))
-        return list_thinlv
+        re_ = '(\S+)\s+(\S+)\s+twi\S+\s+(\S*).*\s*?'
+        return s.re_findall(re_,self.data_lv)
+        # for one in all_lv:
+        #     if 'twi' not in one:
+        #         thinlv_one = s.re_findall(re_,one)
+        #         list_thinlv.append(list(thinlv_one[0]))
+        # return list_thinlv
 
     def refine_vg(self):
-        all_vg = self.data_vg.splitlines()
-        list_vg = []
-        re_ = '\s*(\S*)\s*\S*\s*\S*\s*\S*\s*\S*\s*(\S*)\s*(\S*)\s*?'
-        for one in all_vg[1:]:
-            vg_one = s.re_findall(re_,one)
-            list_vg.append(list(vg_one[0]))
-        return list_vg
+        # all_vg = self.data_vg.splitlines()
+        # list_vg = []
+        re_ = '(\S+)\s+\d+\s+\d+\s+\d+\s+\S+\s+(\S+)\s+(\S+)\s*?'
+        return s.re_findall(re_,self.data_vg)
+        # for one in all_vg[1:]:
+        #     vg_one = s.re_findall(re_,one)
+        #     print(vg_one)
+        #     list_vg.append(list(vg_one[0]))
+        # return list_vg
 
     def is_vg_exists(self,vg):
         if vg in self.data_vg:
@@ -62,3 +61,5 @@ class LVM():
             for one in all_tlv_list:
                 if thinlv == one[0] and vg == one[1]:
                     return True
+
+

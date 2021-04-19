@@ -17,7 +17,7 @@ class Usage():
     hostgroup(hg) modify(m) HOSTGROUP [-a HOST[HOST...]] [-r HOST[HOST...]]'''
 
     hg_show = '''
-    hostgroup(hg) show(s) [HOST]'''
+    hostgroup(hg) show(s) [HOSTGROUP]'''
 
 
 

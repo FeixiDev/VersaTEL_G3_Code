@@ -150,7 +150,7 @@ class PortalCommands():
             type=int,
             dest='netmask',
             action='store',
-            help='Netmask：1-32.It default is 24.')
+            help='Netmask：1-32.')
 
         p_modify_portal.set_defaults(func=self.modify)
 

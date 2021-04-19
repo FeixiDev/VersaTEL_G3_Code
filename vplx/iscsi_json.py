@@ -43,7 +43,7 @@ class JsonOperation(object):
                     "Portal":{},
                     "Target":{}}
                 json.dump(json_dict, fw, indent=4, separators=(',', ': '))
-            s.prt_log('The configuration file has been created, you can enter "vtel iscsi sync" to synchronize data later',2)
+            s.prt_log('The configuration file has been created.Please continue after synchronizing data.',2)
         except json.decoder.JSONDecodeError:
             s.prt_log('Failed to read configuration file.',2)
 
@@ -81,7 +81,6 @@ class JsonOperation(object):
     @s.deco_json('check if it is used')
     def check_in_res(self,res,member,target):
         """
-        check 3 in 2 of 1
         检查目标资源在不在某个res的成员里面，res：Map，Target，Portal
         :param res:
         :param member: 比如HostGroup/DiskGroup
@@ -113,6 +112,7 @@ class JsonOperation(object):
     def delete_data(self, first_key, data_key):
         self.json_data[first_key].pop(data_key)
         return self.json_data[first_key]
+
 
 
     def append_member(self,iscsi_type,target,member,type=None):
@@ -203,4 +203,14 @@ class JsonOperation(object):
 
 
 
+    def get_all_primitive_name(self):
+        """
+        获取所有crm中的primitive资源名（对应配置文件中的portal,target,logicalunit）
+        :return:
+        """
+        lst = list(self.json_data['Portal'].keys())
+        lst.extend(list(self.json_data['Target'].keys()))
+        #self.json_data['LogicalUnit']
+
+        return lst
 

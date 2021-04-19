@@ -71,9 +71,6 @@ class MyLoggerAdapter(logging.LoggerAdapter):
         if self.handler_input:
             self.logger.removeHandler(self.handler_input)
 
-
-
-
 class Log(object):
     _instance_lock = threading.Lock()
     # _instance = None
@@ -115,6 +112,7 @@ class Log(object):
     # write to log file
     def write_to_log(self, t1, t2, d1, d2, data):
         logger = Log._instance.logger
+
         # 获取到日志开关不为True时，移除处理器，不再将数据记录到文件中
         if not self.log_switch:
             logger.remove_my_handler()
@@ -123,9 +121,8 @@ class Log(object):
             self.user = get_username()
         if not self.tid:
             self.tid = create_transaction_id()
-
         logger.debug(
-            '',
+            "",
             extra={
                 'user': self.user,
                 'tid': self.tid,
@@ -134,3 +131,7 @@ class Log(object):
                 'd1': d1,
                 'd2': d2,
                 'data': data})
+
+
+
+

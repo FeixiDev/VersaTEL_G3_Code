@@ -30,12 +30,16 @@ class SyncCommands():
         order = obj_crm.get_order()
         colocation = obj_crm.get_colocation()
         target = obj_crm.get_target()
+        iscsilogicalunit = obj_crm.get_iscsi_logical_unit()
 
         # 检查
         obj_crm.check_portal_component(vip, portblock, order, colocation)
 
-        portal = obj_crm.get_portal_data(vip,portblock,target)
+        portal = obj_crm.get_conf_portal(vip,portblock,target)
         js.cover_data('Portal',portal)
+
+
+        target = obj_crm.get_conf_target(vip,target,iscsilogicalunit)
         js.cover_data('Target',target)
         # js.cover_data({'Portal': portal})
         # js.json_data.update({'Target': target})

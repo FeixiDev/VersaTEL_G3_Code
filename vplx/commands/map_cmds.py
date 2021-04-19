@@ -4,19 +4,19 @@ import sundry as sd
 class Usage():
     # host部分使用手册
     map = '''
-    Map(m) {create(c)/modify(m)/delete(d)/show(s)}'''
+    map(m) {create(c)/modify(m)/delete(d)/show(s)}'''
 
     map_create = '''
-    Map(m) create(c) MAP -dg DISKGROUP[DISKGROUP...] -hg HOSTGROUP[HOSTGROUP...]'''
+    map(m) create(c) MAP -dg DISKGROUP[DISKGROUP...] -hg HOSTGROUP[HOSTGROUP...]'''
 
     map_delete = '''
-    Map(m) delete(d) MAP '''
+    map(m) delete(d) MAP '''
 
     map_modify = '''
-    Map(m) modify(m) MAP -hg|-dg [-a HOSTGROUP|DISKGROUP [HOSTGROUP|DISKGROUP ...]] [-r HOSTGROUP|DISKGROUP [HOSTGROUP|DISKGROUP ...]]'''
+    map(m) modify(m) MAP -hg|-dg [-a HOSTGROUP|DISKGROUP [HOSTGROUP|DISKGROUP ...]] [-r HOSTGROUP|DISKGROUP [HOSTGROUP|DISKGROUP ...]]'''
 
     map_show = '''
-    Map(m) show(s) [MAP]'''
+    map(m) show(s) [MAP]'''
 
 class MapCommands():
 

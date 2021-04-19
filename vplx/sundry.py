@@ -296,7 +296,7 @@ def deco_color(func):
     """
     @wraps(func)
     def wrapper(*args):
-        status_true = ['UpToDate', 'Online', 'Ok', 'InUse']
+        status_true = ['UpToDate', 'Online','ONLINE', 'Ok', 'InUse']
         data = func(*args)
         for lst in data:
             if lst[-1] in status_true:
@@ -341,3 +341,5 @@ def handle_exception():
     else:
         print('The command result cannot be obtained, please check')
         raise consts.CmdError
+
+

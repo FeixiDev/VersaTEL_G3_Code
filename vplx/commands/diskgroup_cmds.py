@@ -7,13 +7,13 @@ class Usage():
     diskgroup(dg) {create(c)/modify(m)/delete(d)/show(s)}'''
 
     dg_create = '''
-    diskgroup(dg) create(c) DISKGROUP DISK[DISK]'''
+    diskgroup(dg) create(c) DISKGROUP DISK[DISK...]'''
 
     dg_delete = '''
     diskgroup(dg) delete(d) DISKGROUP'''
 
     dg_modify = '''
-    diskgroup(dg) modify(m) DISKGROUP DISK[]'''
+    diskgroup(dg) modify(m) DISKGROUP DISK[DISK...]'''
 
     dg_show = '''
     diskgroup(dg) show(s) [DISKGROUP]'''

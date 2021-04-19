@@ -11,3 +11,4 @@ from .hostgroup_cmds import HostGroupCommands
 from .map_cmds import MapCommands
 from .portal_cmds import PortalCommands
 from .sync_cmds import SyncCommands
+from .target_cmds import TargetCommands

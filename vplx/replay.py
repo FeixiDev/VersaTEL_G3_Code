@@ -4,15 +4,17 @@ import sqlite3
 import threading
 import prettytable
 import traceback
-
+from tempfile import NamedTemporaryFile
+from io import StringIO
 import consts
 
 # LOG_PATH = '/var/log/vtel/'
 LOG_PATH = "../vplx/"
 LOG_FILE_NAME = 'cli.log'
+OUTPUT_FILE = False
 
 
-def isFileExists(strfile):
+def _is_file_exist(strfile):
     # 检查文件是否存在
     return os.path.isfile(strfile)
 
@@ -29,7 +31,7 @@ def _get_log_files(base_log_file):
 
 def _read_log_files():
     all_data = ''
-    if not isFileExists(LOG_PATH+LOG_FILE_NAME):
+    if not _is_file_exist(LOG_PATH+LOG_FILE_NAME):
         print('no log file')
         return
     for file in _get_log_files(LOG_FILE_NAME):
@@ -45,6 +47,7 @@ def _get_log_data():
     all_log_data = _read_log_files()
     all_data = re_.findall(all_log_data)
     return all_data
+
 
 
 
@@ -235,9 +238,16 @@ class Replay():
     replay_data = []
     num = 1
     specific_data = {}
+    replay_all = False
 
     def __init__(self):
         pass
+
+    def print_(self,str):
+        if Replay.replay_all:
+            self.tempfile.write(f'{str}\n')
+        else:
+            print(str)
 
 
     def make_table(self,title,list_data):
@@ -270,7 +280,7 @@ class Replay():
 
     def replay_single(self,parser,dict_cmd):
         if not dict_cmd:
-            print('There is no command to replay')
+            self.print_('There is no command to replay')
             return
 
         LogDB.transaction_id = dict_cmd['tid']
@@ -279,20 +289,19 @@ class Replay():
             try:
                 replay_args.func(replay_args)
             except consts.ReplayExit:
-                print('The transaction replay ends')
+                self.print_('The transaction replay ends')
             except Exception:
-                print(str(traceback.format_exc()))
+                self.print_(str(traceback.format_exc()))
             finally:
                 title = f"transaction: {dict_cmd['tid']}  command: {dict_cmd['cmd']}"
                 table = self.make_table(title,self.replay_data)
-                print(f'\r{table}',end='',flush=True)
-                print('\n')
+                self.print_(str(table))
                 if self.mode == 'LITE':
                     self.replay_lite()
                 from iscsi_json import JsonOperation
                 JsonOperation().json_data = None
         else:
-            print(f"Command error: {dict_cmd['cmd']} , and cannot be executed")
+            self.print_(f"Command error: {dict_cmd['cmd']} , and cannot be executed")
 
 
     def replay_execute(self,parser,transaction_id=None,start_time=None, end_time=None):
@@ -311,6 +320,7 @@ class Replay():
         if not cmds:
             print('There is no command to replay')
             return
+
         number_list = [str(i) for i in list(range(1, len(cmds) + 1))]
 
         print(f'transaction num : {len(cmds)}')
@@ -340,13 +350,16 @@ class Replay():
                 print('Switched to NORMAL mode, please continue')
                 continue
             elif answer == 'all':
-                # 全部进行replay时，直接把所有数据展示出来，不然会在交互上停顿
+                self.tempfile = NamedTemporaryFile(mode="w+", dir=r"../vplx/")
+                Replay.replay_all = True
                 Replay.mode = 'NORMAL'
                 for cmd in cmds:
-                    print('\nNext Transaction：')
+                    self.print_('\nNext Transaction：')
                     self.replay_single(parser,cmd)
                     LogDB.reset_id()
                     self.reset_data()
+                self.tempfile.seek(0)
+                os.system(f'less -im {self.tempfile.name}')
             elif answer != 'exit':
                 print('Number error')
 
@@ -363,7 +376,6 @@ class Replay():
         Replay.replay_data = []
         Replay.num = 1
         Replay.specific_data = {}
-
 
 
 

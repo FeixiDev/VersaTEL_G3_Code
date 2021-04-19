@@ -41,6 +41,7 @@ exclude_lines =
     if not isFileExists(LOG_PATH+LOG_FILE_NAME):
     except IndexError*
     s.prt_log('Error, please check whether LINSTOR is normal.', 2)
+    pass
 
 
 

@@ -8,6 +8,9 @@ import pytest
 # import execute
 # import iscsi_json
 from execute import iscsi
+from execute import crm
+import sundry
+import iscsi_json
 import subprocess
 from execute.crm import execute_crm_cmd
 
@@ -901,3 +904,246 @@ class TestPortal:
         assert self.portal._check_netmask(31)
         assert not self.portal._check_netmask(33)
         assert not self.portal._check_netmask('3s')
+
+
+@pytest.mark.target
+class TestTarget:
+    def setup_class(self):
+        # subprocess.run('crm cof primitive pytest_portal_1 IPaddr2 params ip=10.203.1.184 cidr_netmask=24', shell=True)
+
+        subprocess.run('python3 vtel.py iscsi portal c pytest_portal_1 -ip 10.203.1.184', shell=True)
+        time.sleep(5)
+        subprocess.run('python3 vtel.py iscsi portal c pytest_portal_2 -ip 10.203.1.185', shell=True)
+        time.sleep(5)
+        subprocess.run('crm cof primitive pytm_target_1 iSCSITarget params iqn="iqn.2020-02.com.example:pymtest1" implementation=lio-t portals="10.203.1.184:3260" op start timeout=50 stop timeout=40 op monitor interval=15 timeout=40 meta target-role=Stopped', shell=True)
+        subprocess.run('crm cof colocation col_pytm_target_1_pytest_portal_1 inf: pytm_target_1 pytest_portal_1', shell=True)
+        subprocess.run('crm cof order or_pytm_target_1_pytest_portal_1 pytest_portal_1 pytm_target_1', shell=True)
+        subprocess.run('crm res start pytm_target_1', shell=True)
+        subprocess.run(
+            'crm cof primitive pytm_target_2 iSCSITarget params iqn="iqn.2020-02.com.example:pymtest2" implementation=lio-t portals="10.203.1.184:3260" op start timeout=50 stop timeout=40 op monitor interval=15 timeout=40 meta target-role=Stopped',
+            shell=True)
+        subprocess.run('crm cof colocation col_pytm_target_2_pytest_portal_1 inf: pytm_target_2 pytest_portal_1',
+                       shell=True)
+        subprocess.run('crm cof order or_pytm_target_2_pytest_portal_1 pytest_portal_1 pytm_target_2', shell=True)
+        subprocess.run('crm res start pytm_target_2', shell=True)
+        time.sleep(5)
+        subprocess.run('python3 vtel.py iscsi sync', shell=True)
+        time.sleep(3)
+        #环境中要先有一个pytest_res的DRBD资源(Disk)
+        self.ilu = crm.ISCSILogicalUnit()
+        self.ilu.target_name = "pytm_target_2"
+        self.ilu.target_iqn = "iqn.2020-02.com.example:pymtest2"
+        self.ilu.create_mapping("pytest_res",['iqn.2020-02.com.example:host1'])
+        # js = iscsi_json.JsonOperation()
+        # js.json_data["Target"]["pytm_target_2"]["lun"]=['pytest_res']
+        # js.commit_data()
+        self.target = iscsi.Target()
+        self.target.js.json_data["Target"]["pytm_target_2"]["lun"] = ['pytest_res']
+        self.target.js.commit_data()
+
+    def teardown_class(self):
+        # subprocess.run('crm res stop pytest_portal_1', shell=True)
+        # subprocess.run('crm conf del pytest_portal_1', shell=True)
+        # subprocess.run('crm res stop pytest_portal_2', shell=True)
+        # subprocess.run('crm conf del pytest_portal_2', shell=True)
+
+        self.ilu.delete("pytest_res")
+        subprocess.run('crm res stop pytm_target_1', shell=True)
+        time.sleep(1)
+        subprocess.run('crm res ref', shell=True)
+        time.sleep(3)
+        subprocess.run('crm conf del pytm_target_1', shell=True)
+        time.sleep(3)
+        subprocess.run('crm res stop pytm_target_2', shell=True)
+        time.sleep(1)
+        subprocess.run('crm res ref', shell=True)
+        time.sleep(3)
+        subprocess.run('crm conf del pytm_target_2', shell=True)
+        subprocess.run('python3 vtel.py iscsi sync', shell=True)
+        subprocess.run('crm res stop pytest_portal_1', shell=True)
+        time.sleep(1)
+        subprocess.run('crm res ref', shell=True)
+        time.sleep(3)
+        subprocess.run('python3 vtel.py iscsi portal d pytest_portal_1', shell=True)
+        time.sleep(2)
+        subprocess.run('crm res stop pytest_portal_2', shell=True)
+        subprocess.run('crm res ref', shell=True)
+        time.sleep(3)
+        subprocess.run('python3 vtel.py iscsi portal d pytest_portal_2', shell=True)
+
+    def test__get_all_targetIqn(self):
+        assert 'iqn.2020-02.com.example:pymtest1' in self.target._get_all_targetIqn()
+
+    def test_create(self):
+
+        with patch('builtins.print') as terminal_print:
+            self.target.create('@pytc_target_1', 'iqn.2020-02.com.example:pytarget1', 'pytest_portal_1')
+            terminal_print.assert_called_with('Wrong name:@pytc_target_1. It must start with a letter and consist of letters, numbers, and "_" ')
+
+        with patch('builtins.print') as terminal_print:
+            self.target.create('pytc_target_1', 'iqn.2020-02.com.example:pytarget_1', 'pytest_portal_1')
+            terminal_print.assert_called_with('Wrong iqn：iqn.2020-02.com.example:pytarget_1. Please enter the correct iqn.')
+
+        with patch('builtins.print') as terminal_print:
+            self.target.create('pytm_target_1', 'iqn.2020-02.com.example:pytarget11', 'pytest_portal_1')
+            terminal_print.assert_called_with('This name is already in use, please use another name')
+
+        with patch('builtins.print') as terminal_print:
+            self.target.create('pytc_target_1', 'iqn.2020-02.com.example:pytarget1', 'pytest_portal_1a')
+            terminal_print.assert_called_with('pytest_portal_1a does not exist, please use the existing portal')
+
+        with patch('builtins.print') as terminal_print:
+            self.target.create('pytc_target_1', 'iqn.2020-02.com.example:pymtest1', 'pytest_portal_1')
+            terminal_print.assert_called_with('The iqn:"iqn.2020-02.com.example:pymtest1" has been used')
+
+        with patch('builtins.print') as terminal_print:
+            self.target.create('pytc_target_1', 'iqn.2020-02.com.example:pytest1', 'pytest_portal_1')
+            terminal_print.assert_called_with('Create pytc_target_1 successfully')
+        subprocess.run('crm res stop pytc_target_1', shell=True)
+        time.sleep(3)
+        subprocess.run('crm res ref', shell=True)
+        time.sleep(3)
+        subprocess.run('crm conf del pytc_target_1', shell=True)
+        time.sleep(3)
+        subprocess.run('python3 vtel.py iscsi sync', shell=True)
+
+    def test_modify(self, mocker):
+        js = iscsi_json.JsonOperation()
+        js.json_data["Target"]["pytm_target_2"]["lun"] = ['pytest_res']
+        js.commit_data()
+        with patch('builtins.print') as terminal_print:
+            self.target.modify('pytarget_233', 'iqn.2020-02.com.example:pytarget2', 'pytest_portal_2')
+            terminal_print.assert_called_with("Fail！Can't find pytarget_233")
+        with patch('builtins.print') as terminal_print:
+            self.target.modify('pytm_target_1', 'iqn.2020-02.com.example:pytarget_2', 'pytest_portal_2')
+            terminal_print.assert_called_with('Wrong iqn：iqn.2020-02.com.example:pytarget_2. Please enter the correct iqn.')
+        with patch('builtins.print') as terminal_print:
+            self.target.modify('pytm_target_1', 'iqn.2020-02.com.example:pymtest1', 'pytest_portal_2')
+            terminal_print.assert_called_with('The iqn:"iqn.2020-02.com.example:pymtest1" has been used')
+        with patch('builtins.print') as terminal_print:
+            self.target.modify('pytm_target_1', 'iqn.2020-02.com.example:pytarget2', 'pytest_portal_1')
+            #Create colocation:col_pytm_target_1_ successfully
+            terminal_print.assert_called_with('Same as the portal used, please specify another one')
+        with patch('builtins.print') as terminal_print:
+            self.target.modify('pytm_target_1', 'iqn.2020-02.com.example:pytarget2', 'pytest_portal_2a')
+            terminal_print.assert_called_with("Fail！Can't find pytest_portal_2a")
+        with patch('builtins.print') as terminal_print:
+            self.target.modify('pytm_target_1', 'iqn.2020-02.com.example:pytarget3', 'pytest_portal_2')
+            terminal_print.assert_called_with('Modify pytm_target_1 successfully')
+        with patch('builtins.print') as terminal_print:
+            self.target.modify('pytm_target_1', 'iqn.2020-02.com.example:pymtest1', 'pytest_portal_1')
+            terminal_print.assert_called_with('Modify pytm_target_1 successfully')
+        subprocess.run('crm res start pytm_target_1', shell=True)
+        mocker.patch.object(sundry, 'get_answer', return_value="no")
+        # with patch('builtins.print') as terminal_print:
+        #     self.target.modify('pytm_target_2', 'iqn.2020-02.com.example:pymtest4', 'pytest_portal_2')
+        #     terminal_print.assert_called_with('Modify canceled')
+        with pytest.raises(SystemExit) as exsinfo:
+            self.target.modify('pytm_target_2', 'iqn.2020-02.com.example:pymtest4', 'pytest_portal_2')
+        assert exsinfo.type == SystemExit
+        subprocess.run('crm res start pytm_target_1', shell=True)
+
+    def test_delete(self):
+        subprocess.run(
+            'crm cof primitive pytd_target iSCSITarget params iqn="iqn.2020-02.com.example:pydtest1" implementation=lio-t portals="10.203.1.184:3260" op start timeout=50 stop timeout=40 op monitor interval=15 timeout=40 meta target-role=Stopped',
+            shell=True)
+        subprocess.run('crm cof colocation col_pytd_target_pytest_portal_1 inf: pytd_target pytest_portal_1',
+                       shell=True)
+        subprocess.run('crm cof order or_pytd_target_pytest_portal_1 pytest_portal_1 pytd_target', shell=True)
+        subprocess.run('crm res start pytd_target', shell=True)
+        time.sleep(5)
+        subprocess.run('python3 vtel.py iscsi sync', shell=True)
+        time.sleep(3)
+        self.target.js.json_data = self.target.js.read_json()
+        with patch('builtins.print') as terminal_print:
+            self.target.delete('pytd_target1')
+            terminal_print.assert_called_with("Fail！Can't find pytd_target1")
+        with patch('builtins.print') as terminal_print:
+            self.target.delete('pytd_target')
+            terminal_print.assert_called_with('Delete pytd_target successfully')
+        with patch('builtins.print') as terminal_print:
+            self.target.delete('pytm_target_2')
+            terminal_print.assert_called_with('In use：pytest_res. Can not delete')
+        subprocess.run('python3 vtel.py iscsi sync', shell=True)
+        self.target.js.json_data = self.target.js.read_json()
+        self.target.js.json_data["Target"]["pytm_target_2"]["lun"] = ['pytest_res']
+        self.target.js.commit_data()
+
+    def test_show(self):
+        assert ['pytm_target_1', 'iqn.2020-02.com.example:pymtest1', 'pytest_portal_1', 'Started', ''] in self.target.show()
+
+    def test_start(self, mocker):
+        with patch('builtins.print') as terminal_print:
+            self.target.start('pytm_target_1s')
+            terminal_print.assert_called_with('pytm_target_1s does not exist')
+        with patch('builtins.print') as terminal_print:
+            self.target.start('pytm_target_1')
+            terminal_print.assert_called_with('pytm_target_1 is in STARTED state')
+        subprocess.run('crm res stop pytm_target_1', shell=True)
+        time.sleep(2)
+        with patch('builtins.print') as terminal_print:
+            self.target.start('pytm_target_1')
+            terminal_print.assert_called_with('pytm_target_1 has been started')
+        mocker.patch.object(crm.CRMConfig, 'get_crm_res_status', return_value="FAIL")
+        with patch('builtins.print') as terminal_print:
+            self.target.stop('pytm_target_1')
+            terminal_print.assert_called_with('pytm_target_1 A is in FAILED state')
+        subprocess.run('crm res start pytm_target_1', shell=True)
+
+    def test_stop(self,mocker):
+        with patch('builtins.print') as terminal_print:
+            self.target.stop('pytm_target_1s')
+            terminal_print.assert_called_with('pytm_target_1s does not exist')
+        with patch('builtins.print') as terminal_print:
+            self.target.stop('pytm_target_1')
+            terminal_print.assert_called_with('pytm_target_1 has been stopped')
+        # subprocess.run('crm res stop pytm_target_1', shell=True)
+        #Stopped(disabled)
+        mocker.patch.object(crm.CRMConfig, 'get_crm_res_status', return_value="Stopped")
+        mocker.patch.object(sundry, 'get_answer', return_value="no")
+        with pytest.raises(SystemExit) as exsinfo:
+            self.target.stop('pytm_target_1')
+        assert exsinfo.type == SystemExit
+        # with patch('builtins.print') as terminal_print:
+        #     self.target.stop('pytm_target_1')
+        #     terminal_print.assert_called_with('pytm_target_1 has been stopped')
+        mocker.patch.object(crm.CRMConfig, 'get_crm_res_status', return_value="FAIL")
+        with patch('builtins.print') as terminal_print:
+            self.target.stop('pytm_target_1')
+            terminal_print.assert_called_with('pytm_target_1 A is in FAILED state')
+        subprocess.run('crm res start pytm_target_1', shell=True)
+
+    def test_check_name(self):
+        assert self.target._check_name('sgfbfu_hf')
+        assert self.target._check_name('a_1sss_')
+        assert not self.target._check_name('_sgfbfuhf')
+        assert not self.target._check_name('7_sgfbfuhf')
+        assert not self.target._check_name('sgfb*f$uhf')
+        assert not self.target._check_name('sssバージョン番号无语a')
+
+    def test_check_iqn(self):
+        assert self.target._check_iqn("iqn.9999-20.com.vmware.iscsi")
+        assert self.target._check_iqn("iqn.0000-00.com.vmware.iscsi")
+        assert self.target._check_iqn("iqn.2222-11.com.vmware:1")
+        assert self.target._check_iqn("iqn.1998-01.com.vmware.iscsi:name1")
+        assert self.target._check_iqn("iqn.2001-04.com.example:storage:diskarrays-sn-a86753091")
+        assert self.target._check_iqn("iqn.2001-04.com.example.ddd-23-tt:storage.tape1.sys1.xyz")
+        assert not self.target._check_iqn("iqnn.9999-20.com.vmware.iscsi")
+        assert not self.target._check_iqn("iqn.999-20.com.vmware.iscsi")
+        assert not self.target._check_iqn("iqn.9999-2.com.vmware.iscsi")
+        assert not self.target._check_iqn("iqn.9999_20.com.vmware.iscsi")
+        assert not self.target._check_iqn("iqn.0000_21.com.vmware.iscsi")
+        assert not self.target._check_iqn("iqn.0000_21.com.vmware.Iscsi")
+        assert not self.target._check_iqn("iqn.0000_21.com.vmware.iscsi:name_1")
+
+    def test_check_status(self,mocker):
+        #模拟返回的资源状态（实际环境比较难获取到各种不同状态）
+        mocker.patch.object(crm.CRMConfig, 'get_crm_res_status', return_value="Started")
+        assert self.target._check_status("xx") is "OK"
+        mocker.patch.object(crm.CRMConfig, 'get_crm_res_status', return_value="Stopped")
+        mocker.patch.object(crm.CRMConfig, 'get_failed_actions', return_value=True)
+        assert self.target._check_status("xx") is "OTHER_ERROR"
+        mocker.patch.object(crm.CRMConfig, 'get_failed_actions', return_value=False)
+        assert self.target._check_status("xx") is "UNKNOWN_ERROR"
+        mocker.patch.object(crm.CRMConfig, 'get_crm_res_status', return_value="FAILED")
+        assert self.target._check_status("xx") is "FAIL"
