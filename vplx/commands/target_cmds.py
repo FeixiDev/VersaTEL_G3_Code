@@ -145,7 +145,7 @@ class TargetCommands():
         p_start_target = target_subp.add_parser(
             'start',
             help='Start the Target',
-            usage=Usage.target_modify)
+            usage=Usage.target_start)
 
         p_start_target.add_argument(
             'target',
@@ -161,7 +161,7 @@ class TargetCommands():
         p_stop_target = target_subp.add_parser(
             'stop',
             help='Stop the Target',
-            usage=Usage.target_modify)
+            usage=Usage.target_stop)
 
         p_stop_target.add_argument(
             'target',
@@ -195,19 +195,13 @@ class TargetCommands():
         target = ex.Target()
         target.delete(args.target)
 
+
     @s.deco_record_exception
     def modify(self, args):
         crm = ex.CRMData()
         crm.check()
         target = ex.Target()
         target.modify(args.target,args.iqn,args.portal)
-
-        # if any([args.iqn,args.portal]):
-        #     # target = ex.Target()
-        #     # target.modify(args.iqn,args.portal)
-        # else:
-        #     s.prt_log('Please specify at least one data to be modified',1)
-
 
 
     def start(self,args):

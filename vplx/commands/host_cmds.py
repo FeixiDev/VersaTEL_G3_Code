@@ -58,12 +58,12 @@ class HostCommands():
             action='store',
             help='host_name',
             default=None)
-        p_delete_host.add_argument(
-            '-y',
-            dest='yes',
-            action='store_true',
-            help='Skip to confirm selection',
-            default=False)
+        # p_delete_host.add_argument(
+        #     '-y',
+        #     dest='yes',
+        #     action='store_true',
+        #     help='Skip to confirm selection',
+        #     default=False)
 
 
         p_delete_host.set_defaults(func=self.delete)

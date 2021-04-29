@@ -38,11 +38,12 @@ class SyncCommands():
         portal = obj_crm.get_conf_portal(vip,portblock,target)
         js.cover_data('Portal',portal)
 
-
         target = obj_crm.get_conf_target(vip,target,iscsilogicalunit)
         js.cover_data('Target',target)
-        # js.cover_data({'Portal': portal})
-        # js.json_data.update({'Target': target})
+
+        logical = obj_crm.get_conf_lun(target,iscsilogicalunit)
+        js.cover_data('LogicalUnit',logical)
+
         js.commit_data()
         sd.prt_log('Configuration file data update completed', 1)
 

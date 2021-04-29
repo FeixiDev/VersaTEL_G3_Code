@@ -16,6 +16,7 @@ from commands import (
     MapCommands,
     PortalCommands,
     TargetCommands,
+    LogicalUnitCommands,
     SyncCommands
 )
 
@@ -64,6 +65,7 @@ class VtelCLI(object):
         self._map_commands = MapCommands()
         self._portal_commands = PortalCommands()
         self._target_commands = TargetCommands()
+        self._logicalunit_commands = LogicalUnitCommands()
         self._sync_commands = SyncCommands()
         self._replay_commands = ReplayCommands(self.parser)
         self.setup_parser()
@@ -127,6 +129,7 @@ class VtelCLI(object):
         self._map_commands.setup_commands(subp_iscsi)
         self._portal_commands.setup_commands(subp_iscsi)
         self._target_commands.setup_commands(subp_iscsi)
+        self._logicalunit_commands.setup_commands(subp_iscsi)
 
         self._sync_commands.setup_commands(subp_iscsi)
 

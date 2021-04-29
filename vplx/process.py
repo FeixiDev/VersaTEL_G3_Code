@@ -1,13 +1,6 @@
 # coding:utf-8
-# coding:utf-8
 
-import sqlite3
 import linstordb
-import consts
-import sundry
-# from public import log
-import sys
-
 
 class Process_data():
 

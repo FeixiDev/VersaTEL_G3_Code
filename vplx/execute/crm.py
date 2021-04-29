@@ -208,11 +208,11 @@ class CRMData():
     def get_iscsi_logical_unit(self):
         # ilu : iscsi logical unit
         re_ilu = re.compile(
-            r'primitive\s(\S+)\siSCSILogicalUnit.*\s*params\starget_iqn="(\S+)"\s.*allowed_initiators="(.*?)"')
+            r'primitive\s(\S+)\siSCSILogicalUnit.*\s*params\starget_iqn="(\S+)"\s.*?lun=(\d+)\spath="(\S+)"\sallowed_initiators="(.*?)"')
         result = s.re_findall(re_ilu, self.crm_conf_data)
         dict_ilu = {}
         for ilu in result:
-            dict_ilu.update({ilu[0]:{'target_iqn':ilu[1],'initiators':ilu[2].split(' ')}})
+            dict_ilu.update({ilu[0]:{'target_iqn':ilu[1],'lun':ilu[2],'path':ilu[3],'initiators':ilu[4].split(' ')}})
         self.ilu = dict_ilu
         return dict_ilu
 
@@ -258,7 +258,7 @@ class CRMData():
         return dict_portal
 
 
-    def get_conf_target(self,vip_all,target_all,iscsilogicalunit_all):
+    def get_conf_target(self,vip_all,target_all,lun_all):
         """
         获取现在CRM环境下的所有Target数据，组成与配置文件同样的结构返回
         """
@@ -269,12 +269,28 @@ class CRMData():
                 # 对target添加portal
                 if target_all[target]['ip'] == vip_all[vip]['ip']:
                     dict_target[target]['portal'] = vip
-            for lun in iscsilogicalunit_all:
+            for lun in lun_all:
                 # 对target添加lun
-                if target_all[target]['target_iqn'] == iscsilogicalunit_all[lun]['target_iqn']:
+                if target_all[target]['target_iqn'] == lun_all[lun]['target_iqn']:
                     dict_target[target]['lun'].append(lun)
         return dict_target
 
+
+    def get_conf_lun(self,target_all,lun_all):
+        """
+        获取现在CRM环境下的所有LogicalUnit数据，组成与配置文件同样的结构返回
+        """
+        dict_lun = {}
+        for lun in lun_all:
+            dict_lun.update({lun:{'lun_id':lun_all[lun]['lun'],
+                                                  'target':'',
+                                                  'path':lun_all[lun]['path'],
+                                                  'initiators':lun_all[lun]['initiators']}})
+            for target in target_all:
+                if target_all[target]['target_iqn'] == lun_all[lun]['target_iqn']:
+                    dict_lun[lun]['target'] = target
+
+        return dict_lun
 
 
 
@@ -325,9 +341,9 @@ class CRMData():
         # 收集了不符合规范的portal对应的所有组件，但是目前还没有进行提示
 
 
-    def check_env_sync(self,vip,portblock,target,iscsilogicalunit):
+    def check_env_sync(self,vip,portblock,target,lun):
         """
-        检查CRM环境与JSON配置文件所记录的Portal、Target的数据是否一致，不一致提示后退出
+        检查CRM环境与JSON配置文件所记录的Portal、Target、LogicalUnit的数据是否一致，不一致提示后退出
         :param vip_all:目前CRM环境的vip数据
         :param target_all:目前CRM环境的target数据
         :return:
@@ -340,12 +356,19 @@ class CRMData():
         if not 'Target' in all_key:
             s.prt_log('"Target" do not exist in the JSON configuration file',2)
             return
+        if not 'LogicalUnit' in all_key:
+            s.prt_log('"LogicalUnit" do not exist in the JSON configuration file',2)
+            return
+
 
         crm_portal = self.get_conf_portal(vip,portblock,target)
         json_portal = copy.deepcopy(js.json_data['Portal']) # 防止对json对象的数据修改，进行深拷贝，之后修改数据结构再修改
 
-        crm_target = self.get_conf_target(vip,target,iscsilogicalunit)
+        crm_target = self.get_conf_target(vip,target,lun)
         json_target = copy.deepcopy(js.json_data['Target'])
+
+        crm_lun = self.get_conf_lun(target,lun)
+        json_lun = copy.deepcopy(js.json_data['LogicalUnit'])
 
 
         # 处理列表的顺序问题
@@ -362,12 +385,22 @@ class CRMData():
             for target_name,target_data in json_target.items():
                 target_data['lun'] = set(target_data['lun'])
 
+            for lun_name,lun_data in crm_target.items():
+                lun_data['lun'] = set(lun_data['lun'])
+
+            for lun_name,lun_data in json_target.items():
+                lun_data['lun'] = set(lun_data['lun'])
+
             if not crm_portal == json_portal:
                 s.prt_log('The data Portal of the JSON configuration file is inconsistent, please check and try again',2)
                 return
             if not crm_target == json_target:
                 s.prt_log('The data Target of the JSON configuration file is inconsistent, please check and try again',2)
                 return
+            if not crm_lun == json_lun:
+                s.prt_log('The data LogicalUnit of the JSON configuration file is inconsistent, please check and try again',2)
+                return
+
         except KeyError as key:
             s.prt_log(f'The configuration file is missing a key: {key}',2)
 
@@ -379,11 +412,11 @@ class CRMData():
         vip = self.get_vip()
         portblock = self.get_portblock()
         target = self.get_target()
-        iscsilogicalunit = self.get_iscsi_logical_unit()
+        lun = self.get_iscsi_logical_unit()
         order = self.get_order()
         colocation = self.get_colocation()
         self.check_portal_component(vip,portblock,order,colocation)
-        self.check_env_sync(vip,portblock,target,iscsilogicalunit)
+        self.check_env_sync(vip,portblock,target,lun)
 
 
 class CRMConfig():
@@ -416,7 +449,7 @@ class CRMConfig():
             raise ValueError('"type" must one of [IPaddr2,iSCSITarget,portblock,iSCSILogicalUnit]')
 
         cmd_result = execute_crm_cmd(f'crm res list | grep {res}')
-        re_status = f'{res}\s*\(ocf::heartbeat:{type}\):\s*([\w\s()]*?)\n'
+        re_status = f'{res}\s*\(ocf::heartbeat:{type}\):\s*(.*?)\n'
         status = s.re_search(re_status,cmd_result['rst'],output_type='groups')
         if status:
             return status[0]
@@ -512,8 +545,6 @@ class CRMConfig():
         if result['sts']:
             s.prt_log("refresh",0)
             return True
-
-
 
 
 class IPaddr2():
@@ -676,21 +707,6 @@ class ISCSITarget():
             # s.prt_log(f'Create iscsitarget:{name} successfully',0)
             return True
 
-
-    @RollBack
-    def modify(self,name,iqn,ip,port):
-        cmd_iqn = f'crm conf set {name}.iqn {iqn}'
-        cmd_portal = f'crm cof set {name}.portals {ip}:{port}'
-        cmd_result_iqn = execute_crm_cmd(cmd_iqn)
-        cmd_result_portal = execute_crm_cmd(cmd_portal)
-        if not cmd_result_iqn['sts'] or not cmd_result_portal['sts']:
-            s.prt_log(cmd_result_iqn['rst'],1)
-            s.prt_log(cmd_result_portal['rst'], 1)
-            raise consts.CmdError
-        else:
-            s.prt_log(f"Modify target:{name} (portal and iqn) successfully",0)
-            return True
-
     @RollBack
     def modify_iqn(self,name,iqn):
         cmd = f'crm conf set {name}.iqn {iqn}'
@@ -699,7 +715,7 @@ class ISCSITarget():
             s.prt_log(cmd_result['rst'],1)
             raise consts.CmdError
         else:
-            s.prt_log(f"Modify target:{name} (iqn) successfully",0)
+            s.prt_log(f"Modify iSCSITarget:{name} (iqn) successfully",0)
             return True
 
 
@@ -711,7 +727,7 @@ class ISCSITarget():
             s.prt_log(cmd_result['rst'],1)
             raise consts.CmdError
         else:
-            s.prt_log(f"Modify target:{name} (portal) successfully",0)
+            s.prt_log(f"Modify iSCSITarget:{name} (portal) successfully",0)
             return True
 
 
@@ -722,7 +738,7 @@ class ISCSITarget():
         if not result:
             raise consts.CmdError
         else:
-            s.prt_log(f'Delete iscsitarget:{name} successfully',0)
+            s.prt_log(f'Delete iSCSITarget:{name} successfully',0)
             return True
 
 
@@ -740,22 +756,6 @@ class ISCSILogicalUnit():
     def __init__(self):
         self.js = iscsi_json.JsonOperation()
         self.list_res_created = []
-        self.target_name, self.target_iqn = self.get_target()
-
-    def get_target(self):
-        # 获取target及对应的target_iqn
-        try:
-            target_all = self.js.json_data['Target']
-        except KeyError:
-            s.prt_log('Data is abnormal, unable to continue ',2)
-
-        if target_all:
-            # 目前的设计只有一个target（现在可能target有多个），所以直接取一个
-            target = next(iter(target_all.keys()))
-            target_iqn = target_all[target]['target_iqn']
-            return target,target_iqn
-        else:
-            s.prt_log('No target，please create target first', 2)
 
 
     # @RollBack
@@ -772,7 +772,7 @@ class ISCSILogicalUnit():
             f'meta target-role=Stopped'
         result = execute_crm_cmd(cmd)
         if result['sts']:
-            s.prt_log(f"Create iSCSILogicalUnit:{name} successfully",0)
+            # s.prt_log(f"Create iSCSILogicalUnit:{name} successfully",0)
             return True
         else:
             raise consts.CmdError
@@ -785,7 +785,7 @@ class ISCSILogicalUnit():
         if not result:
             raise consts.CmdError
         else:
-            s.prt_log(f'Delete {name} successfully',0)
+            # s.prt_log(f'Delete iSCSILogicalUnit:{name} successfully',0)
             return True
 
 
@@ -798,7 +798,7 @@ class ISCSILogicalUnit():
             s.prt_log(f"Modify the allowed initiators of {name} successfully",0)
             return True
         else:
-            s.prt_log(result['rts'],1)
+            s.prt_log(result['rst'],1)
             raise consts.CmdError
 
 
@@ -810,23 +810,24 @@ class ISCSILogicalUnit():
             s.prt_log(f"Modify the target iqn of {name} successfully",0)
             return True
         else:
-            s.prt_log(result['rts'],1)
+            s.prt_log(result['rst'],1)
             raise consts.CmdError
 
 
-    def create_mapping(self,name,list_iqn):
+    def create_mapping(self,name,target,list_iqn):
         path = self.js.json_data['Disk'][name]
         lunid = int(path[-4:]) - 1000
         initiator = ' '.join(list_iqn)
+        target_iqn = self.js.json_data['Target'][target]['target_iqn']
 
         try:
             # 执行iscsilogicalunit创建
-            self.create(name,self.target_iqn,lunid,path,initiator)
+            self.create(name,target_iqn,lunid,path,initiator)
             self.list_res_created.append(name)
 
             #Colocation和Order创建
-            Colocation.create(f'col_{name}', name, self.target_name)
-            Order.create(f'or_{name}', self.target_name, name)
+            Colocation.create(f'col_{name}', name, target)
+            Order.create(f'or_{name}', target, name)
             s.prt_log(f'create colocation:co_{name}, order:or_{name} success', 0)
         except Exception as ex:
             # 回滚（暂用这种方法）
@@ -847,5 +848,4 @@ class ISCSILogicalUnit():
         return True
 
 
-
-
+# print(CRMData().get_iscsi_logical_unit())

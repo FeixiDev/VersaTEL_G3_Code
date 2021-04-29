@@ -11,7 +11,7 @@ except ImportError:
 
 
 
-# 这种用法可以多学习一下
+
 class LinstorClientError(Exception):
     """
     Linstor exception with a message and exit code information

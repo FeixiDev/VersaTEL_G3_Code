@@ -90,12 +90,12 @@ class DiskGroupCommands():
             action='store',
             help='diskgroup_name',
             default=None)
-        P_delete_dg.add_argument(
-            '-y',
-            dest='yes',
-            action='store_true',
-            help='Skip to confirm selection',
-            default=False)
+        # P_delete_dg.add_argument(
+        #     '-y',
+        #     dest='yes',
+        #     action='store_true',
+        #     help='Skip to confirm selection',
+        #     default=False)
 
         P_delete_dg.set_defaults(func=self.delete)
 
@@ -146,6 +146,7 @@ class DiskGroupCommands():
     def show(self, args):
         diskgroup = ex.DiskGroup()
         diskgroup.show(args.diskgroup)
+
 
     @sd.deco_record_exception
     def delete(self, args):

@@ -41,7 +41,8 @@ class JsonOperation(object):
                     "DiskGroup": {},
                     "Map": {},
                     "Portal":{},
-                    "Target":{}}
+                    "Target":{},
+                    "LogicalUnit":{}}
                 json.dump(json_dict, fw, indent=4, separators=(',', ': '))
             s.prt_log('The configuration file has been created.Please continue after synchronizing data.',2)
         except json.decoder.JSONDecodeError:
@@ -210,7 +211,9 @@ class JsonOperation(object):
         """
         lst = list(self.json_data['Portal'].keys())
         lst.extend(list(self.json_data['Target'].keys()))
-        #self.json_data['LogicalUnit']
+        lst.extend(list(self.json_data['LogicalUnit'].keys()))
 
         return lst
+
+
 

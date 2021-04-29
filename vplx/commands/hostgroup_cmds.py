@@ -94,12 +94,12 @@ class HostGroupCommands():
             action='store',
             help='hostgroup_name',
             default=None)
-        p_delete_hg.add_argument(
-            '-y',
-            dest='yes',
-            action='store_true',
-            help='Skip to confirm selection',
-            default=False)
+        # p_delete_hg.add_argument(
+        #     '-y',
+        #     dest='yes',
+        #     action='store_true',
+        #     help='Skip to confirm selection',
+        #     default=False)
 
         p_delete_hg.set_defaults(func=self.delete)
 

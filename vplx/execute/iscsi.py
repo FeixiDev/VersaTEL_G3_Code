@@ -89,10 +89,10 @@ class IscsiConfig():
         return info
 
 
-    def create_iscsilogicalunit(self):
+    def create_iscsilogicalunit(self,target):
         for disk, iqn in self.create.items():
             self.recovery_list['delete'].add(disk)
-            self.obj_iscsiLU.create_mapping(disk, iqn)
+            self.obj_iscsiLU.create_mapping(disk, target, iqn)
 
     def delete_iscsilogicalunit(self):
         for disk in self.delete:
@@ -104,10 +104,14 @@ class IscsiConfig():
             self.recovery_list['modify'].update({disk: self.recover['modify'][disk]})
             self.obj_iscsiLU.modify_initiators(disk, iqn)
 
+
+    # 回滚功能，暂不调用
     def rollback(self):
         print("Mapping relationship rollback")
         for disk, iqn in self.recovery_list['create'].items():
-            self.obj_iscsiLU.create_mapping(disk, iqn)
+            pass
+            # 这里的回滚需要去获取到原lun的target,待处理
+            # self.obj_iscsiLU.create_mapping(disk,target,iqn)
         for disk in self.recovery_list['delete']:
             self.obj_iscsiLU.delete(disk)
         for disk, iqn in self.recovery_list['modify'].items():
@@ -121,19 +125,19 @@ class IscsiConfig():
         if not answer in ['y', 'yes', 'Y', 'YES']:
             s.prt_log(f'Cancel operation', 2)
 
-    def crm_conf_change(self):
+    def crm_conf_change(self,target=None):
         try:
-            self.create_iscsilogicalunit()
+            self.create_iscsilogicalunit(target)
             self.delete_iscsilogicalunit()
             self.modify_iscsilogicalunit()
         except consts.CmdError:
             s.prt_log('Command execution failed',1)
             self.logger.write_to_log('DATA', 'DEBUG', 'exception', 'Rollback', str(traceback.format_exc()))
-            self.rollback()
+            # self.rollback()
         except Exception:
             s.prt_log('Unknown exception',1)
             self.logger.write_to_log('DATA', 'DEBUG', 'exception', 'Rollback', str(traceback.format_exc()))
-            self.rollback()
+            # self.rollback()
 
 
 # 问题，这个disk数据是根据LINSTOR来的，那么是不是进行iscsi命令之前，需要更新这个数据，或者进行校验？
@@ -536,7 +540,7 @@ class Map():
         # self.target_name, self.target_iqn = self.get_target()
 
 
-    def create(self, map, list_hg, list_dg):
+    def create(self, map, target, list_hg, list_dg):
         """
         创建map
         :param map:
@@ -546,15 +550,19 @@ class Map():
         """
         # 创建前的检查
         if self.js.check_key('Map', map):
-            s.prt_log(f'The Map "{map}" already existed.', 2)
+            s.prt_log(f'The Map "{map}" already existed.', 1)
             return
+        if not self.js.check_key('Target', target):
+            s.prt_log(f"Can't find {target}", 1)
+            return
+
         for hg in list_hg:
             if not self.js.check_key('HostGroup', hg):
-                s.prt_log(f"Can't find {hg}", 2)
+                s.prt_log(f"Can't find {hg}", 1)
                 return
         for dg in list_dg:
             if not self.js.check_key('DiskGroup', dg):
-                s.prt_log(f"Can't find {dg}", 2)
+                s.prt_log(f"Can't find {dg}", 1)
                 return
 
         json_data_before = copy.deepcopy(self.js.json_data)
@@ -566,7 +574,7 @@ class Map():
         if dict_disk_inuse:
             s.prt_log(f"Disk:{','.join(dict_disk_inuse.keys())} has been mapped,will modify their allowed initiators",0)
 
-        obj_iscsi.create_iscsilogicalunit()
+        obj_iscsi.create_iscsilogicalunit(target)
         obj_iscsi.modify_iscsilogicalunit()
 
         self.js.commit_data()
@@ -1199,9 +1207,9 @@ class Target():
             self.js.json_data['Portal'][portal]['target'].remove(name)
             self.js.delete_data('Target', name)
             self.js.commit_data()
-            print(f'Delete {name} successfully')
+            print(f'Delete target:{name} successfully')
         else:
-            print(f'Failed to delete {name}, please check')
+            print(f'Failed to delete target:{name}, please check')
 
 
     def show(self):
@@ -1235,7 +1243,7 @@ class Target():
         if status == 'Started':
             s.prt_log(f'{name} is in STARTED state', 1)
             return
-        elif status == 'FAIL':
+        elif 'FAIL' in status:
             s.prt_log(f'{name} A is in FAILED state', 1)
             return
 
@@ -1246,7 +1254,7 @@ class Target():
         # 验证
         target = self.js.json_data['Target'][name]
         try:
-            # 这里没有按照需求说的，使用次数的方式去进行状态的检查，而是时间，并且设置也还没有考虑luns
+            # 这里在设置的timeout内来监控状态，并且设置也还没有考虑luns
             crm_config.monitor_status_by_time(name,'iSCSITarget','Started',20)
             crm_config.monitor_status_by_time(f'{target["portal"]}_prtblk_off','portblock','Started',60)
         except TimeoutError as msg:
@@ -1266,7 +1274,7 @@ class Target():
         if status == 'Stopped (disabled)':
             s.prt_log(f'{name} has been stopped', 1)
             return
-        elif status == 'FAIL':
+        elif 'FAIL' in status:
             s.prt_log(f'{name} A is in FAILED state', 1)
             return
         elif status == 'Stopped':
@@ -1323,5 +1331,290 @@ class Target():
             s.prt_log(f'Failed to create {name}, please check', 1)
             return 'FAIL'
 
+
+class LogicalUnit():
+    def __init__(self):
+        self.logger = log.Log()
+        self.js = iscsi_json.JsonOperation()
+
+
+    def _get_all_drbdInuse(self):
+        data = self.js.json_data['LogicalUnit']
+        return [x['path'] for x in data.values()]
+
+    def create(self,target,disk,hosts):
+        """
+        create iSCSI Logical Unit
+        :param target:
+        :param path: str
+        :param initiator_iqns: list
+        :return:
+        """
+
+        # 验证
+        if not self.js.check_key('Disk',disk):
+            s.prt_log(f"Fail！Can't find {disk}", 1)
+            return
+
+        # 一个disk只能被一个logical unit使用
+        drbd_path = self.js.json_data['Disk'][disk]
+        if drbd_path in self._get_all_drbdInuse():
+            s.prt_log(f'The disk "{disk}" has been used',1)
+            return
+
+        if not self.js.check_key('Target',target):
+            s.prt_log(f"Fail！Can't find {target}", 1)
+            return
+
+
+        for host in hosts:
+            if self.js.check_key('Host', host) == False:
+                s.prt_log(f"Fail! Can't find {host}.Please give the true name.", 1)
+                return
+
+
+        name = f'lun_{disk}'
+        target_iqn = self._get_target_iqn(target)
+        path = self._get_path(disk)
+        lunid = str(int(path[-4:]) - 1000)
+        initiator_iqns = self._get_initiator_iqns(hosts)
+
+        # 执行
+        try:
+            ISCSILogicalUnit().create(name,target_iqn,lunid,path," ".join(initiator_iqns))
+            Colocation().create(f'col_{name}', name, target) # 这里的name，是指disk，还是logicalunit
+            Order().create(f'or_{name}', target, name)
+        except Exception as ex:
+            s.prt_log('出错，退出',1)
+            return
+
+        else:
+            #启动资源
+            CRMConfig().start_res(name)
+
+        # 配置文件更新
+        status = self._check_status(name)
+        if status == 'OK':
+            self.js.update_data('LogicalUnit', name, {'lun_id': lunid, 'target':target,'path':path,'initiators':initiator_iqns})
+            self.js.json_data['Target'][target]['lun'].append(name)
+            self.js.commit_data()
+
+
+    def modify(self):
+        # 可以设置修改target_iqn
+        pass
+
+
+    def delete(self,name):
+        # 验证
+
+        if not self.js.check_key('LogicalUnit',name):
+            s.prt_log(f"Fail！Can't find {name}", 1)
+            return
+
+
+        # LogicalUnit正在使用中时，直接退出
+        # dict_logicalunit = self.js.json_data['LogicalUnit'][name]
+        # hosts = dict_logicalunit['hosts']
+        # if hosts:
+        #     s.prt_log(f'In use：{",".join(hosts)}. Can not delete', 1)
+        #     return
+
+        # 正在使用中时，交互确认
+        if CRMConfig().get_crm_res_status(name,'iSCSILogicalUnit') == 'Started':
+            print(f'resource {name} is running, confirm to delete? y/n')
+            answer = s.get_answer()
+            if not answer in ['y', 'yes', 'Y', 'YES']:
+                s.prt_log('Delete canceled', 2)
+
+        # 执行
+        ISCSILogicalUnit().delete(name)
+
+        # 验证
+        if not CRMConfig().get_crm_res_status(name,'iSCSILogicalUnit'):
+            target = self.js.json_data['LogicalUnit'][name]['target']
+            self.js.json_data['Target'][target]['lun'].remove(name)
+            self.js.delete_data('LogicalUnit', name)
+            self.js.commit_data()
+            print(f'Delete {name} successfully')
+        else:
+            print(f'Failed to delete {name}, please check')
+
+
+    def show(self):
+        """
+        用表格展示所有logical unit数据
+        :return: all logical unit
+        """
+        list_header = ["LogicalUnit", "Lun ID", "Target", "Path", "Hosts", "Status"]
+        list_data = []
+
+        dict_logicalunit = self.js.json_data['LogicalUnit']
+        for target, data in dict_logicalunit.items():
+            status = CRMConfig().get_crm_res_status(target,'iSCSILogicalUnit')
+            hosts = self._get_host_data_for_show(data['initiators'])
+            list_data.append([target, data['lun_id'], data['target'], data['path'], hosts, status])
+
+        table = s.make_table(list_header, list_data)
+        s.prt_log(table, 0)
+        return list_data
+
+
+    def add(self, logicalunit, hosts):
+        if not self.js.check_key('LogicalUnit',logicalunit):
+            s.prt_log(f"Fail！Can't find {logicalunit}", 1)
+            return
+
+        initiators_add = []
+        for host in hosts:
+            if not self.js.check_key("Host", host):
+                s.prt_log(f"Fail！Can't find {host}", 1)
+                return
+            initiator = self.js.json_data['Host'][host]
+            if initiator in self.js.json_data["LogicalUnit"][logicalunit]["initiators"]:
+                s.prt_log(f'{host} is already on the "allowed initiators"', 1)
+                return
+            initiators_add.append(initiator)
+
+        initiators = self.js.json_data['LogicalUnit'][logicalunit]['initiators']
+        initiators.extend(initiators_add)
+        ISCSILogicalUnit().modify_initiators(logicalunit,initiators)
+
+        # 配置文件更新
+        self.js.commit_data()
+
+
+    def remove(self, logicalunit, hosts):
+        if not self.js.check_key('LogicalUnit', logicalunit):
+            s.prt_log(f"Fail！Can't find {logicalunit}", 1)
+            return
+
+        initiators_remove = []
+        for host in hosts:
+            if not self.js.check_key("Host", host):
+                s.prt_log(f"Fail！Can't find {host}", 1)
+                return
+            initiator = self.js.json_data['Host'][host]
+            if not initiator in self.js.json_data["LogicalUnit"][logicalunit]["initiators"]:
+                s.prt_log(f'{host} is not in the "allowed initiators"', 1)
+                return
+            initiators_remove.append(initiator)
+
+        initiators = self.js.json_data['LogicalUnit'][logicalunit]['initiators']
+        initiators = list(set(initiators)-set(initiators_remove))
+
+        if not initiators:
+            s.prt_log('Please keep at least one initiators',1)
+            return
+
+        ISCSILogicalUnit().modify_initiators(logicalunit,initiators)
+
+        # 配置文件更新
+        self.js.json_data['LogicalUnit'][logicalunit]['initiators'] = initiators
+        self.js.commit_data()
+
+
+    def start(self, name):
+        if not self.js.check_key('LogicalUnit', name):
+            s.prt_log(f'{name} does not exist', 1)
+            return
+
+        crm_config = CRMConfig()
+        status = crm_config.get_crm_res_status(name, 'iSCSILogicalUnit')
+        if status == 'Started':
+            s.prt_log(f'{name} is in STARTED state', 1)
+            return
+        elif 'FAIL' in status:
+            s.prt_log(f'{name} A is in FAILED state', 1)
+            return
+        # 执行
+        crm_config.start_res(name)
+
+        # 验证, 还没有确定判断是否成功启动的条件
+        try:
+            crm_config.monitor_status_by_time(name,'iSCSILogicalUnit','Started',20)
+        except TimeoutError as msg:
+            s.prt_log(msg, 1)
+        else:
+            s.prt_log(f'{name} has been started', 0)
+
+
+    def stop(self, name):
+        # 前置判断
+        if not self.js.check_key('LogicalUnit', name):
+            s.prt_log(f'{name} does not exist', 1)
+            return
+
+        crm_config = CRMConfig()
+        status = crm_config.get_crm_res_status(name, 'iSCSILogicalUnit')
+        if status == 'Stopped (disabled)':
+            s.prt_log(f'{name} has been stopped', 1)
+            return
+        elif 'FAIL' in status:
+            s.prt_log(f'{name} A is in FAILED state', 1)
+            return
+        elif status == 'Stopped':
+            s.prt_log(f'{name} has been stopped for other reasons, but you can continue to stop it.(y/n)', 1)
+            answer = s.get_answer()
+            if not answer in ['y', 'yes', 'Y', 'YES']:
+                s.prt_log('already cancelled', 2)
+
+        s.prt_log('Trying to stop', 0)
+        # 执行
+        crm_config.stop_res(name)
+
+        # 验证
+        try:
+            crm_config.monitor_status_by_time(name, 'iSCSILogicalUnit', 'Stopped (disabled)', timeout=60)
+        except TimeoutError as msg:
+            s.prt_log(msg, 1)
+        else:
+            s.prt_log(f'{name} has been stopped', 0)
+
+
+    def _get_path(self,disk):
+        return self.js.json_data['Disk'][disk]
+
+    def _get_target_iqn(self,target):
+        return self.js.json_data['Target'][target]['target_iqn']
+
+    def _get_initiator_iqns(self,hosts):
+        return [self.js.json_data['Host'][host] for host in hosts]
+
+    def _get_host_data_for_show(self,list_iqn):
+        data_list = []
+        for iqn in list_iqn:
+            for k,v in self.js.json_data['Host'].items():
+                if iqn == v:
+                    one = f'{iqn}({k})'
+                    break
+            else:
+                one = f'{iqn}()'
+            data_list.append(one)
+        return "\n".join(data_list)
+
+    def _check_status(self, name):
+        """
+        验证iscsilogicalunit的状态
+        :param name: portal name
+        :return:
+        """
+        time.sleep(2)
+        obj_crm = CRMConfig()
+        status = obj_crm.get_crm_res_status(name, type='iSCSILogicalUnit')
+        if status == 'Started':
+            s.prt_log(f'Create {name} successfully', 1)
+            return 'OK'
+        elif 'Stopped' in status:
+            failed_actions = obj_crm.get_failed_actions(name)
+            if failed_actions:
+                s.prt_log(failed_actions, 1)
+                return 'OTHER_ERROR'
+            else:
+                s.prt_log('Unknown error, please check', 1)
+                return 'UNKNOWN_ERROR'
+        else:
+            s.prt_log(f'Failed to create {name}, please check', 1)
+            return 'FAIL'
 
 

@@ -44,6 +44,8 @@ class MapCommands():
         p_create_map.add_argument(
             'map', action='store', help='map_name')
         p_create_map.add_argument(
+            '-tg','-target',dest='target',action='store', help='target', required=True,)
+        p_create_map.add_argument(
             '-hg', action='store', nargs='+', help='hostgroup_name')
         p_create_map.add_argument(
             '-dg', action='store', nargs='+', help='diskgroup_name')
@@ -62,12 +64,12 @@ class MapCommands():
             help='map_name',
             default=None)
 
-        p_delete_map.add_argument(
-            '-y',
-            dest='yes',
-            action='store_true',
-            help='Skip to confirm selection',
-            default=False)
+        # p_delete_map.add_argument(
+        #     '-y',
+        #     dest='yes',
+        #     action='store_true',
+        #     help='Skip to confirm selection',
+        #     default=False)
 
         p_delete_map.set_defaults(func=self.delete)
 
@@ -142,7 +144,7 @@ class MapCommands():
     @sd.deco_record_exception
     def create(self, args):
         map = ex.Map()
-        map.create(args.map, args.hg, args.dg)
+        map.create(args.map,args.target,args.hg, args.dg)
 
     @sd.deco_record_exception
     def show(self, args):
