@@ -101,7 +101,7 @@ class LogicalUnitCommands():
         """
         # add arguments of logicalunit delete
         p_delete_logicalunit = logicalunit_subp.add_parser(
-            'delete', aliases='d', help='Delete the Target',usage=Usage.logicalunit_delete)
+            'delete', aliases='d', help='Delete the iSCSI Logical Unit',usage=Usage.logicalunit_delete)
 
         p_delete_logicalunit.add_argument(
             'logicalunit',

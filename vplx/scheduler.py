@@ -18,9 +18,10 @@ class Scheduler():
 
 
     def get_linstor_data(self):
-        node_data = gevent.spawn(LinstorAPI().get_node)
-        res_data = gevent.spawn(LinstorAPI().get_resource)
-        sp_data = gevent.spawn(LinstorAPI().get_storagepool)
+        linstor_api = LinstorAPI()
+        node_data = gevent.spawn(linstor_api.get_node)
+        res_data = gevent.spawn(linstor_api.get_resource)
+        sp_data = gevent.spawn(linstor_api.get_storagepool)
         gevent.joinall([node_data,res_data,sp_data])
 
         return {'node_data':node_data.value,'res_data':res_data.value,'sp_data':sp_data.value}

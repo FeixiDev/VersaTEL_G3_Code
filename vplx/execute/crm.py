@@ -819,6 +819,7 @@ class ISCSILogicalUnit():
         lunid = int(path[-4:]) - 1000
         initiator = ' '.join(list_iqn)
         target_iqn = self.js.json_data['Target'][target]['target_iqn']
+        portal = self.js.json_data['Target'][target]['portal']
 
         try:
             # 执行iscsilogicalunit创建
@@ -828,6 +829,7 @@ class ISCSILogicalUnit():
             #Colocation和Order创建
             Colocation.create(f'col_{name}', name, target)
             Order.create(f'or_{name}', target, name)
+            Order.create(f'or_{name}_prtblk_off', name, f'{portal}_prtblk_off')
             s.prt_log(f'create colocation:co_{name}, order:or_{name} success', 0)
         except Exception as ex:
             # 回滚（暂用这种方法）

@@ -1378,12 +1378,14 @@ class LogicalUnit():
         path = self._get_path(disk)
         lunid = str(int(path[-4:]) - 1000)
         initiator_iqns = self._get_initiator_iqns(hosts)
+        portal = self.js.json_data['Target'][target]['portal']
 
         # 执行
         try:
             ISCSILogicalUnit().create(name,target_iqn,lunid,path," ".join(initiator_iqns))
-            Colocation().create(f'col_{name}', name, target) # 这里的name，是指disk，还是logicalunit
+            Colocation().create(f'col_{name}', name, target) # 这里的name，是指disk，还是logicalunit？
             Order().create(f'or_{name}', target, name)
+            Order().create(f'or_{name}_prtblk_off', name, f'{portal}_prtblk_off')
         except Exception as ex:
             s.prt_log('出错，退出',1)
             return
