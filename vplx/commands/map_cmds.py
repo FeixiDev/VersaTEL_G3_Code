@@ -7,7 +7,7 @@ class Usage():
     map(m) {create(c)/modify(m)/delete(d)/show(s)}'''
 
     map_create = '''
-    map(m) create(c) MAP -dg DISKGROUP[DISKGROUP...] -hg HOSTGROUP[HOSTGROUP...]'''
+    map(m) create(c) MAP -dg DISKGROUP[DISKGROUP...] -hg HOSTGROUP[HOSTGROUP...] -tg TARGET'''
 
     map_delete = '''
     map(m) delete(d) MAP '''
