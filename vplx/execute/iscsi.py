@@ -1672,6 +1672,10 @@ class ISCSI():
 
     def show(self,sep_node_list=None,sep_target_list=None,sep_initiator_list=None):
         # 检查指定的参数是否在配值文件中
+
+        # 检查配置文件数据
+        self.crm.update()
+
         result = {}
         for node, targets in self.crm.get_target_and_node().items():
             target_data = {}
