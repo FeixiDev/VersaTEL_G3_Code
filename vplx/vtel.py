@@ -117,7 +117,7 @@ class VtelCLI(object):
         subp_stor = parser_stor.add_subparsers(dest='subargs_stor',metavar='')
         subp_iscsi = parser_iscsi.add_subparsers(dest='subargs_iscsi',metavar='')
 
-        parser_iscsi_show = subp_iscsi.add_parser('show',help='Show iSCSI resource information')
+        parser_iscsi_show = subp_iscsi.add_parser('show',aliases=['s'],help='Show iSCSI resource information')
         parser_iscsi_show.add_argument('-n','--node', dest='node', help='Specify a node',nargs='+')
         parser_iscsi_show.add_argument('-t','--target', dest='target', help='Specify a target',nargs='+')
         parser_iscsi_show.add_argument('-i','--initiator', dest='initiator', help='Specify a initiators',nargs='+')

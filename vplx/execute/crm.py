@@ -474,6 +474,25 @@ class CRMData():
         self.check_env_sync(vip,portblock,target,lun)
 
 
+    def update(self):
+        js = iscsi_json.JsonOperation()
+
+        # 获取数据
+        vip = self.get_vip()
+        portblock = self.get_portblock()
+        target = self.get_target()
+        iscsilogicalunit = self.get_iscsi_logical_unit()
+
+        portal = self.get_conf_portal(vip,portblock,target)
+        js.cover_data('Portal',portal)
+        target = self.get_conf_target(vip,target,iscsilogicalunit)
+        js.cover_data('Target',target)
+        logical = self.get_conf_lun(target,iscsilogicalunit)
+        js.cover_data('LogicalUnit',logical)
+        js.commit_data()
+
+
+
 class CRMConfig():
     def __init__(self):
         pass
@@ -609,7 +628,8 @@ class IPaddr2():
     @RollBack
     def create(self,name,ip,netmask):
         cmd = f'crm cof primitive {name} IPaddr2 params ' \
-              f'ip={ip} cidr_netmask={netmask}'
+              f'ip={ip} cidr_netmask={netmask} ' \
+              f'op monitor interval=10 timeout=20'
         cmd_result = execute_crm_cmd(cmd)
         if not cmd_result['sts']:
             # 创建失败，输出原命令报错信息
