@@ -1,5 +1,6 @@
 import argparse
 import sys
+
 import log
 import sundry
 import consts
@@ -19,6 +20,8 @@ from commands import (
     LogicalUnitCommands,
     SyncCommands
 )
+
+
 
 
 class MyArgumentParser(argparse.ArgumentParser):
@@ -87,13 +90,13 @@ class VtelCLI(object):
                             action='store_true')
 
 
-        parser_apply = subp.add_parser(
-            'apply',
-            help='Apply a configuration file',
-        )
-        parser_apply.add_argument(
-            'file',
-            help='Enter the name of the configuration file to be applied(yaml file)')
+        # parser_apply = subp.add_parser(
+        #     'apply',
+        #     help='Apply a configuration file',
+        # )
+        # parser_apply.add_argument(
+        #     'file',
+        #     help='Enter the name of the configuration file to be applied(yaml file)')
 
 
 
@@ -108,12 +111,19 @@ class VtelCLI(object):
             'iscsi',
             help='Management operations for iSCSI')
 
-
         self.parser_stor = parser_stor
         self.parser_iscsi = parser_iscsi
 
         subp_stor = parser_stor.add_subparsers(dest='subargs_stor',metavar='')
         subp_iscsi = parser_iscsi.add_subparsers(dest='subargs_iscsi',metavar='')
+
+        parser_iscsi_show = subp_iscsi.add_parser('show',aliases=['s'],help='Show iSCSI resource information')
+        parser_iscsi_show.add_argument('-n','--node', dest='node', help='Specify a node',nargs='+')
+        parser_iscsi_show.add_argument('-t','--target', dest='target', help='Specify a target',nargs='+')
+        parser_iscsi_show.add_argument('-i','--initiator', dest='initiator', help='Specify a initiators',nargs='+')
+        parser_iscsi_show.set_defaults(func=self.iscsi_show)
+
+
 
         # add all subcommands and argument
         self._replay_commands.setup_commands(subp)
@@ -161,6 +171,11 @@ class VtelCLI(object):
         else:
             self.logger.write_to_log('DATA','INPUT','cmd_input', path, {'valid':'0','cmd':cmd})
         args.func(args)
+
+    def iscsi_show(self,args):
+        from execute import iscsi
+        iscsi.ISCSI().show(args.node,args.target,args.initiator)
+
 
 
 def main():

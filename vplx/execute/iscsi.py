@@ -1620,3 +1620,106 @@ class LogicalUnit():
             return 'FAIL'
 
 
+class ISCSI():
+    def __init__(self):
+        self.js = iscsi_json.JsonOperation()
+        self.crm = CRMData()
+        self.crm.get_crm_st()
+
+
+    def _get_portal(self,portal):
+        data = self.js.json_data['Portal'][portal]
+        status = self.crm.get_res_status(portal,type='IPaddr2')
+        result = {"portals":{data['ip']:{"status":status}}}
+        return result
+
+
+    def _get_lun(self,lun):
+        data = self.js.json_data['LogicalUnit'][lun]
+        status = self.crm.get_res_status(lun,type='iSCSILogicalUnit')
+        result = {"path":data['path'],"lun id":data['lun_id'],"status":status}
+        return result
+
+
+    def _get_initiators(self,host,luns):
+        iqn = self.js.json_data['Host'][host]
+        dict_luns = {}
+        for lun in luns:
+            dict_luns.update({lun:self._get_lun(lun)})
+        result = {host:{"iqn":iqn,"map lun":len(luns)}}
+        result[host].update(dict_luns)
+        return result
+
+
+    def _get_target(self,target,sep_initiator_list=None):
+        data = self.js.json_data['Target'][target]
+        status = self.crm.get_res_status(target,type='iSCSITarget')
+
+        initiators = {}
+        for iqn,luns in self._get_luns(target).items():
+            host = self._get_host(iqn)
+            if not sep_initiator_list:
+                initiator_data = self._get_initiators(host, luns)
+                initiators.update(initiator_data)
+            elif sep_initiator_list and host in sep_initiator_list:
+                initiator_data = self._get_initiators(host,luns)
+                initiators.update(initiator_data)
+                break
+
+        portal = self._get_portal(data['portal'])
+        result = {target:[data['target_iqn'],{"status":status},{"initiator":initiators},portal]}
+        return result
+
+    def show(self,sep_node_list=None,sep_target_list=None,sep_initiator_list=None):
+        # 检查指定的参数是否在配值文件中
+
+        # 检查配置文件数据
+        self.crm.update()
+
+        result = {}
+        for node, targets in self.crm.get_target_and_node().items():
+            target_data = {}
+            if not sep_node_list:
+                for target in targets:
+                    if sep_target_list and target in sep_target_list:
+                        tg = self._get_target(target,sep_initiator_list)
+                        target_data.update(tg)
+                    elif not sep_target_list:
+                        tg = self._get_target(target,sep_initiator_list)
+                        target_data.update(tg)
+                result.update({node:target_data})
+
+            elif sep_node_list and node in sep_node_list:
+                for target in targets:
+                    if sep_target_list and target in sep_target_list:
+                        tg = self._get_target(target,sep_initiator_list)
+                        target_data.update(tg)
+                    elif not sep_target_list:
+                        tg = self._get_target(target,sep_initiator_list)
+                        target_data.update(tg)
+                result.update({node:target_data})
+
+        import yaml
+        print(yaml.dump(result,sort_keys=False))
+        return result
+
+
+    def _get_host(self,sep_iqn):
+        for host,iqn in self.js.json_data['Host'].items():
+            if iqn == sep_iqn:
+                return host
+
+
+    def _get_luns(self,target):
+        luns = self.js.json_data['Target'][target]['lun']
+        _dict = {}
+        for lun in luns:
+            initiators = self.js.json_data['LogicalUnit'][lun]['initiators']
+            for initiator in initiators:
+                if initiator in _dict.keys():
+                    _dict[initiator].append(lun)
+                else:
+                    _dict.update({initiator: [lun]})
+
+        return _dict
+

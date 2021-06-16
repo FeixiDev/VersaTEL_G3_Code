@@ -167,6 +167,9 @@ class CRMData():
         if 'ERROR' in self.crm_conf_data:
             s.prt_log("Could not perform requested operations, are you root?",2)
 
+        self.crm_st = None
+
+
     def get_crm_conf(self):
         cmd = 'crm configure show | cat'
         result = execute_crm_cmd(cmd)
@@ -174,6 +177,58 @@ class CRMData():
             return result['rst']
         else:
             s.handle_exception()
+
+
+    def get_crm_st(self):
+        cmd = 'crm st | cat'
+        result = execute_crm_cmd(cmd)
+        if result:
+            self.crm_st = result['rst']
+            return result['rst']
+        else:
+            s.handle_exception()
+
+
+    def get_target_and_node(self):
+        target_all = re.findall('(\w*)\s*\(ocf::heartbeat:iSCSITarget\):\s*\w*\s(\w*)',self.crm_st)
+        dict_target = {}
+        for i in target_all:
+            if i[1] in dict_target.keys():
+                dict_target[i[1]].append(i[0])
+            else:
+                dict_target.update({i[1]: [i[0]]})
+        return dict_target
+
+    def get_res_status(self,res,type):
+        # 获取target，lun，portal的status
+        re_status = f'{res}\s*\(ocf::heartbeat:{type}\):\s*(.*?)\s'
+        status = re.findall(re_status,self.crm_st)
+        if status:
+            return status[0]
+
+
+
+
+    # 获取集群中各节点的资源
+    # def get_cluster_res(self):
+    #     cmd = "crm st | cat"
+    #     result = execute_crm_cmd(cmd)
+    #     target_all = re.findall('(\w*)\s*\(ocf::heartbeat:iSCSITarget\):\s*\w*\s(\w*)',result['rst'])
+    #     lun_all = re.findall('(\w*)\s*\(ocf::heartbeat:iSCSILogicalUnit\):\s*\w*\s(\w*)',result['rst'])
+    #
+    #
+    #     dict_target = {}
+    #     dict_lun = {}
+    #     for i in target_all:
+    #         dict_target.update({i[1]:i[0]})
+    #
+    #     for i in lun_all:
+    #         dict_lun.update({i[1]:i[0]})
+
+
+
+
+
 
     def get_vip(self):
         re_vip = re.compile(
@@ -419,6 +474,25 @@ class CRMData():
         self.check_env_sync(vip,portblock,target,lun)
 
 
+    def update(self):
+        js = iscsi_json.JsonOperation()
+
+        # 获取数据
+        vip = self.get_vip()
+        portblock = self.get_portblock()
+        target = self.get_target()
+        iscsilogicalunit = self.get_iscsi_logical_unit()
+
+        portal = self.get_conf_portal(vip,portblock,target)
+        js.cover_data('Portal',portal)
+        target = self.get_conf_target(vip,target,iscsilogicalunit)
+        js.cover_data('Target',target)
+        logical = self.get_conf_lun(target,iscsilogicalunit)
+        js.cover_data('LogicalUnit',logical)
+        js.commit_data()
+
+
+
 class CRMConfig():
     def __init__(self):
         pass
@@ -554,7 +628,8 @@ class IPaddr2():
     @RollBack
     def create(self,name,ip,netmask):
         cmd = f'crm cof primitive {name} IPaddr2 params ' \
-              f'ip={ip} cidr_netmask={netmask}'
+              f'ip={ip} cidr_netmask={netmask} ' \
+              f'op monitor interval=10 timeout=20'
         cmd_result = execute_crm_cmd(cmd)
         if not cmd_result['sts']:
             # 创建失败，输出原命令报错信息
@@ -690,7 +765,6 @@ class Order():
         result = execute_crm_cmd(cmd)
 
 
-
 class ISCSITarget():
     def __init__(self):
         pass
@@ -747,9 +821,6 @@ class ISCSITarget():
 
     def stop(self, name):
         pass
-
-
-
 
 
 class ISCSILogicalUnit():
@@ -849,5 +920,3 @@ class ISCSILogicalUnit():
         # 验证？
         return True
 
-
-# print(CRMData().get_iscsi_logical_unit())
