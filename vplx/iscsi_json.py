@@ -115,7 +115,6 @@ class JsonOperation(object):
         return self.json_data[first_key]
 
 
-
     def append_member(self,iscsi_type,target,member,type=None):
         """
         :param iscsi_type:
@@ -201,7 +200,6 @@ class JsonOperation(object):
                         self.delete_data('Map', map)
         else:
             raise TypeError('type must be "host/hg/dg"')
-
 
 
     def get_all_primitive_name(self):
