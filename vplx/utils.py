@@ -6,7 +6,7 @@ import subprocess
 
 class SSHConn(object):
 
-    def __init__(self, host, port=22, username=None, password=None, timeout=None):
+    def __init__(self, host, port=22, username=None, password=None, timeout=10):
         self._host = host
         self._port = port
         self._timeout = timeout
@@ -27,7 +27,7 @@ class SSHConn(object):
             # objSSHClient.exec_command("\x003")
             self.SSHConnection = objSSHClient
         except:
-            pass
+            print(f"Failed to connect {self._host}")
 
     def ssh_connect(self):
         self._connect()
