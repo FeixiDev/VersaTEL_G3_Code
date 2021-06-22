@@ -2,6 +2,7 @@ import execute as ex
 import sundry as sd
 import execute.lvm_operation as lvm
 import sys
+import random
 
 
 class Usage():
@@ -84,7 +85,8 @@ class LVMCommands():
             '--type',
             dest='type',
             action='store',
-            help='vg or thinpool',
+            help='Type: vg or thinpool',
+            choices=['vg', 'thinpool'],
             required=True)
 
         p_create_lvm.set_defaults(func=self.create)
@@ -115,10 +117,12 @@ class LVMCommands():
             '--type',
             dest='type',
             action='store',
-            help='vg or thinpool',
+            help='Type: vg or thinpool',
+            choices=['vg', 'thinpool'],
             required=True)
         p_delete_lvm.add_argument(
             '-dvg',
+            '--delvg',
             dest='confirm',
             action='store_true',
             help='Confirm to delete vg with deleting thinpool',
@@ -131,7 +135,7 @@ class LVMCommands():
         p_show_lvm = lvm_subp.add_parser(
             'show',
             aliases='s',
-            help='Displays the LVM information',
+            help='Display the LVM information',
             usage=Usage.lvm_show)
         self.p_show_lvm = p_show_lvm
         p_show_lvm.add_argument(
@@ -139,7 +143,7 @@ class LVMCommands():
             '--node',
             dest='node',
             action='store',
-            help='Show LVM on this Node')
+            help='Display LVM on this Node')
         p_show_lvm.add_argument(
             '-vg',
             dest='vg',
@@ -147,6 +151,7 @@ class LVMCommands():
             help='VG name that you want to show')
         p_show_lvm.add_argument(
             '-d',
+            '--device',
             dest='device',
             action='store_true',
             help='Display Device',
@@ -167,6 +172,7 @@ class LVMCommands():
             for node in node_dict:
                 node_list.append(node["Node"])
         for node in node_list:
+            print()
             print('=' * 15, "Node:", node, '=' * 15)
             lvm_operation = lvm.ClusterLVM(node)
             if args.device:
@@ -177,18 +183,25 @@ class LVMCommands():
     def create(self, args):
         lvm_operation = lvm.ClusterLVM(args.node)
         if args.type == "vg":
-            for pv in args.device:
-                lvm_operation.create_pv(pv)
-            lvm_operation.create_vg(args.name, args.device)
+            if args.device:
+                for pv in args.device:
+                    lvm_operation.create_pv(pv)
+                lvm_operation.create_vg(args.name, args.device)
+            else:
+                print("The following arguments are required: -d/--device DEVICE [DEVICE ...]")
         if args.type == "thinpool":
             if args.vg:
                 vg_name = args.vg
             elif args.device:
                 for pv in args.device:
                     lvm_operation.create_pv(pv)
-                vg_name = f'vvg_{args.name}'
+                vg_name = f'vvg_{args.name}_{random.randint(0,10)}'
                 lvm_operation.create_vg(vg_name, args.device)
             else:
+                print("The following arguments are required:  -d DEVICE [DEVICE ...] / -vg VG")
+                sys.exit()
+            if not args.size:
+                print("The following arguments are required:  -s Size")
                 sys.exit()
             lvm_operation.create_thinpool(args.name, args.size, vg_name)
 
@@ -199,16 +212,6 @@ class LVMCommands():
             lvm_operation.delete_vg(args.name)
         if args.type == "thinpool":
             lvm_operation.delete_thinpool(args.name, args.confirm)
-            # vg = lvm_operation.get_vg_via_thinpool(args.name)
-            # if not lvm_operation.check_thinpool(vg[0], args.name):
-            #     if lvm_operation.del_thinpool(vg[0], args.name):
-            #         pv_dict = lvm_operation.get_pv_via_vg(vg[0])
-            #         if args.comfirm:
-            #             if lvm_operation.del_vg(vg[0]):
-            #                 for pv in pv_dict.keys():
-            #                     lvm_operation.del_pv(pv)
-            # else:
-            #     print(f"{args.name} is in Used")
 
     def print_lvm_help(self, *args):
         self.lvm_parser.print_help()

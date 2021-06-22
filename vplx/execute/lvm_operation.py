@@ -61,7 +61,7 @@ class ClusterLVM(object):
         result = utils.exec_cmd(cmd, self.conn)
         if result:
             if result["st"]:
-                lvm_list = re.findall('(/dev/sd\S+)\s+\[\s*(\S+\s\w+)\]\s+', result["rt"])
+                lvm_list = re.findall('(\S+)\s+\[\s*(\S+\s\w+)\]\s+', result["rt"])
                 return lvm_list
 
     def get_filesys(self):
@@ -71,7 +71,6 @@ class ClusterLVM(object):
         if result:
             if result["st"]:
                 fs_list = re.findall('(\S+)(?:\s+(?:\d+|-)){3}\s+\S+\s+\S\s*', result["rt"])
-                print(fs_list)
                 return fs_list
 
     def get_pvs(self):
@@ -177,7 +176,7 @@ class ClusterLVM(object):
         for vg in self.vg_list:
             if vg[0] == name:
                 if int(vg[2]) > 0:
-                    print(f"{name} still have other lv resource.Cancel delete {name}.")
+                    print(f"{name} still have other lv resource. Cancel delete {name}.")
                     sys.exit()
         cmd = f"vgremove {name} -y"
         result = utils.exec_cmd(cmd, self.conn)
@@ -254,7 +253,7 @@ class ClusterLVM(object):
         return vg_list
 
     def get_lvm_on_node(self):
-        """处理展示的数据"""
+        """将需要展示的数据处理成字典"""
 
         if not self.vg_list:
             print("The node don't have VG.")
@@ -264,7 +263,7 @@ class ClusterLVM(object):
 
         vg_dict = {}
         for vg in self.vg_list:
-            vg_data = {'free size': None, 'total size': None, 'linstor storage pool': {'sp name': None}}
+            vg_data = {'total size': None, 'free size': None, 'linstor storage pool': {'sp name': None}}
             pv_key = f'pvs({vg[1]})'
             lv_key = f'lvs({vg[2]})'
             vg_data['total size'] = vg[3]
@@ -307,7 +306,7 @@ class ClusterLVM(object):
             vg_status = self.check_vg(vg[0])
             vg_data["linstor storage pool"]["sp name"] = vg_status
 
-            vg_dict[vg[0]] = vg_data
+            # vg_dict[vg[0]] = vg_data
         return vg_dict
 
     def show_vg(self, vg=None):
@@ -317,7 +316,7 @@ class ClusterLVM(object):
             print('-' * 10, "Can't get LINSTOR resource", '-' * 10)
         try:
             if vg:
-                print('-' * 10, vg, '-' * 10)
+                print('-' * 15, vg, '-' * 15)
                 print(yaml.dump(dict_vg[vg], sort_keys=False))
             else:
                 print(yaml.dump(dict_vg, sort_keys=False))
@@ -326,11 +325,10 @@ class ClusterLVM(object):
 
     def show_unused_lvm_device(self):
         """表格展示未被用来创建PV的LVM设备"""
-        print('-' * 10, "Unused Device", '-' * 10)
+        print('-' * 15, "Unused Device", '-' * 15)
         list_header = ["Device", "Size"]
         lvm_list = self.get_lvm_device()
         fs_list = self.get_filesys()
-        print(lvm_list)
         if lvm_list:
             unused_lvm_device = list(lvm_list)
             if self.pv_list:
@@ -338,7 +336,8 @@ class ClusterLVM(object):
                     for device in lvm_list:
                         if pv[0] == device[0]:
                             unused_lvm_device.remove(device)
-            unused_lvm_device_without_fs = [i for i in unused_lvm_device if i[0] not in fs_list]
+            unused_lvm_device_without_fs = [i for i in unused_lvm_device if
+                                            i[0] not in fs_list and "/dev/drbd" not in i[0] and "_00000" not in i[0]]
             print(s.make_table(list_header, unused_lvm_device_without_fs))
         else:
             print(f"No message of unused device")

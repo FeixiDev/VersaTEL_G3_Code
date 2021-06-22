@@ -6,7 +6,7 @@ import subprocess
 
 class SSHConn(object):
 
-    def __init__(self, host, port=22, username=None, password=None, timeout=10):
+    def __init__(self, host, port=22, username=None, password=None, timeout=8):
         self._host = host
         self._port = port
         self._timeout = timeout
@@ -82,7 +82,6 @@ def exec_cmd(cmd, conn=None):
         if p.returncode == 0:
             result = p.stdout
             result = result.decode() if isinstance(result, bytes) else result
-            # print("result", result)
             return {"st": True, "rt": result}
         else:
             # print(f"  Failed to execute command: {cmd}")
