@@ -7,6 +7,7 @@ import consts
 
 from commands import (
     ReplayCommands,
+    LVMCommands,
     NodeCommands,
     ResourceCommands,
     StoragePoolCommands,
@@ -58,6 +59,7 @@ class VtelCLI(object):
     def __init__(self):
         self.parser = MyArgumentParser(prog="vtel")
         self.logger = log.Log()
+        self._lvm_commands = LVMCommands()
         self._node_commands = NodeCommands()
         self._resource_commands = ResourceCommands()
         self._storagepool_commands = StoragePoolCommands()
@@ -128,6 +130,7 @@ class VtelCLI(object):
         # add all subcommands and argument
         self._replay_commands.setup_commands(subp)
 
+        self._lvm_commands.setup_commands(subp_stor)
         self._node_commands.setup_commands(subp_stor)
         self._resource_commands.setup_commands(subp_stor)
         self._storagepool_commands.setup_commands(subp_stor)
