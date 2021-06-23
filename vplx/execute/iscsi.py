@@ -203,6 +203,7 @@ class Host():
         """
         判断iqn是否符合格式
         """
+        iqn = iqn.lower()
         result = s.re_findall(
             r'^iqn\.\d{4}-\d{2}\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:[a-zA-Z0-9.:-]+)?$',
             iqn)

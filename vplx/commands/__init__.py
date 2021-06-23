@@ -1,6 +1,7 @@
 from .replay_cmds import ReplayCommands
 
 from .node_cmds import NodeCommands
+from .lvm_cmds import LVMCommands
 from .resource_cmds import ResourceCommands
 from .storagepool_cmds import StoragePoolCommands
 
