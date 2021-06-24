@@ -203,13 +203,13 @@ class Host():
         """
         判断iqn是否符合格式
         """
-        iqn = iqn.lower()
         result = s.re_findall(
             r'^iqn\.\d{4}-\d{2}\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:[a-zA-Z0-9.:-]+)?$',
             iqn)
         return True if result else False
 
     def create(self, host, iqn):
+        iqn = iqn.lower()
         if self.js.check_key('Host', host):
             s.prt_log(f"Fail! The Host {host} already existed.", 1)
             return
@@ -264,6 +264,7 @@ class Host():
         s.prt_log(f"Delete {host} successfully", 0)
 
     def modify(self, host, iqn):
+        iqn = iqn.lower()
         if not self.js.check_key('Host', host):
             s.prt_log(f"Fail! Can't find {host}", 1)
             return
