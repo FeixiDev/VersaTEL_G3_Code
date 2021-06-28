@@ -177,7 +177,8 @@ class LVMCommands():
             lvm_operation = lvm.ClusterLVM(node)
             if args.device:
                 lvm_operation.show_unused_lvm_device()
-            lvm_operation.show_vg(args.vg)
+            else:
+                lvm_operation.show_vg(args.vg)
 
     @sd.deco_record_exception
     def create(self, args):
@@ -190,6 +191,9 @@ class LVMCommands():
             else:
                 print("The following arguments are required: -d/--device DEVICE [DEVICE ...]")
         if args.type == "thinpool":
+            if not args.size:
+                print("The following arguments are required:  -s Size")
+                sys.exit()
             if args.vg:
                 vg_name = args.vg
             elif args.device:
@@ -199,9 +203,6 @@ class LVMCommands():
                 lvm_operation.create_vg(vg_name, args.device)
             else:
                 print("The following arguments are required:  -d DEVICE [DEVICE ...] / -vg VG")
-                sys.exit()
-            if not args.size:
-                print("The following arguments are required:  -s Size")
                 sys.exit()
             lvm_operation.create_thinpool(args.name, args.size, vg_name)
 
