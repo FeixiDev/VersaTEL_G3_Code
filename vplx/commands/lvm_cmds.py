@@ -163,6 +163,7 @@ class LVMCommands():
 
     @sd.deco_record_exception
     def show(self, args):
+
         node_list = []
         api = ex.linstor_api.LinstorAPI()
         if args.node:
@@ -171,39 +172,63 @@ class LVMCommands():
             node_dict = api.get_node()
             for node in node_dict:
                 node_list.append(node["Node"])
+        if args.vg and args.device:
+            print(f"Only show unused lvm device, message of {args.vg} will not display")
         for node in node_list:
             print()
             print('=' * 15, "Node:", node, '=' * 15)
             lvm_operation = lvm.ClusterLVM(node)
             if args.device:
                 lvm_operation.show_unused_lvm_device()
-            lvm_operation.show_vg(args.vg)
+            else:
+                lvm_operation.show_vg(args.vg)
 
     @sd.deco_record_exception
     def create(self, args):
         lvm_operation = lvm.ClusterLVM(args.node)
         if args.type == "vg":
-            if args.device:
-                for pv in args.device:
-                    lvm_operation.create_pv(pv)
-                lvm_operation.create_vg(args.name, args.device)
+            if lvm_operation.check_vg_exit(args.name):
+                if args.device:
+                    if lvm_operation.check_pv_exit(args.device):
+                        for pv in args.device:
+                            lvm_operation.create_pv(pv)
+                    else:
+                        sys.exit()
+                    lvm_operation.create_vg(args.name, args.device)
+                else:
+                    print("The following arguments are required: -d/--device DEVICE [DEVICE ...]")
             else:
-                print("The following arguments are required: -d/--device DEVICE [DEVICE ...]")
+                print(f"{args.name} is already exists.")
+                sys.exit()
         if args.type == "thinpool":
             if args.vg:
-                vg_name = args.vg
+                if not lvm_operation.check_vg_exit(args.vg):
+                    if args.vg in lvm_operation.get_vg_via_thinpool(args.name):
+                        print(f"{args.name} already exists in {args.vg}")
+                        sys.exit()
+                    else:
+                        vg_name = args.vg
+                        size = lvm_operation.check_and_get_size(args.vg, args.size, "vg")
+                else:
+                    print("Please select the available vg.")
+                    sys.exit()
             elif args.device:
-                for pv in args.device:
-                    lvm_operation.create_pv(pv)
-                vg_name = f'vvg_{args.name}_{random.randint(0,10)}'
-                lvm_operation.create_vg(vg_name, args.device)
+                if lvm_operation.check_pv_exit(args.device):
+                    size = lvm_operation.check_and_get_size(args.device, args.size, "device")
+                    for pv in args.device:
+                        lvm_operation.create_pv(pv)
+                    vg_name = f'vvg_{args.name}_{random.randint(0, 10)}'
+                    if not lvm_operation.check_vg_exit(vg_name):
+                        vg_name = f'vvg_{args.name}_{random.randint(0, 10)}{random.randint(0, 10)}'
+                    lvm_operation.create_vg(vg_name, args.device)
+                else:
+                    print("Please select the available device.")
+                    sys.exit()
             else:
                 print("The following arguments are required:  -d DEVICE [DEVICE ...] / -vg VG")
                 sys.exit()
-            if not args.size:
-                print("The following arguments are required:  -s Size")
-                sys.exit()
-            lvm_operation.create_thinpool(args.name, args.size, vg_name)
+            size = f"{size}M"
+            lvm_operation.create_thinpool(args.name, size, vg_name)
 
     @sd.deco_record_exception
     def delete(self, args):
