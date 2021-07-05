@@ -218,12 +218,11 @@ class LVMCommands():
                     for pv in args.device:
                         lvm_operation.create_pv(pv)
                     vg_name = f'vvg_{args.name}_{random.randint(0, 10)}'
-                    if lvm_operation.check_vg_exit(vg_name):
-                        lvm_operation.create_vg(vg_name, args.device)
-                    else:
+                    if not lvm_operation.check_vg_exit(vg_name):
                         vg_name = f'vvg_{args.name}_{random.randint(0, 10)}{random.randint(0, 10)}'
+                    lvm_operation.create_vg(vg_name, args.device)
                 else:
-                    print("Please select the available device.\n")
+                    print("Please select the available device.")
                     sys.exit()
             else:
                 print("The following arguments are required:  -d DEVICE [DEVICE ...] / -vg VG")
