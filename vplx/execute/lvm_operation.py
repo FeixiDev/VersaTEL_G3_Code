@@ -9,10 +9,30 @@ import sys
 import sundry as s
 
 
+def size_conversion(size_str):
+    m = re.match(r'([0-9.]+)\s*(\D*)', size_str)
+    try:
+        size = float(m.group(1))
+        unit_str = m.group(2)
+        if unit_str in ["", "M", "MB", "MiB"]:
+            pass
+        elif unit_str in ["K", "KB", "KiB"]:
+            size = size / 1024
+        elif unit_str in ["G", "GB", "GiB"]:
+            size = size * 1024
+        elif unit_str in ["T", "TB", "TiB"]:
+            size = size * 1024 * 1024
+        else:
+            s.prt_log("Unit error of size!", 2)
+    except AttributeError:
+        s.prt_log("The size that you input is not a valid number", 2)
+    return size
+
+
 class ClusterLVM(object):
     def __init__(self, node):
-        self.api = LinstorAPI()
         try:
+            self.api = LinstorAPI()
             self.sp = self.api.get_storagepool([node])
             self.res = self.api.get_resource([node])
         except AttributeError:
@@ -108,10 +128,10 @@ class ClusterLVM(object):
         cmd = f"pvcreate {device} -y"
         result = utils.exec_cmd(cmd, self.conn)
         if result["st"]:
-            print(f"Success in createing PV: {device}")
+            s.prt_log(f"Success in createing PV: {device}", 0)
             return True
         else:
-            print(f"Failed to create PV {device}")
+            s.prt_log(f"Failed to create PV {device}", 1)
             return False
 
     def create_vg(self, name, list_pv):
@@ -120,10 +140,10 @@ class ClusterLVM(object):
         cmd = f"vgcreate {name} {pv} -y"
         result = utils.exec_cmd(cmd, self.conn)
         if result["st"]:
-            print(f"Success in createing VG: {name}")
+            s.prt_log(f"Success in createing VG: {name}", 0)
             return True
         else:
-            print(f"Failed to create VG {name}")
+            s.prt_log(f"Failed to create VG {name}", 1)
             return False
 
     def create_lv(self, name, size, vg):
@@ -131,10 +151,10 @@ class ClusterLVM(object):
         cmd = f"lvcreate -n {name} -L {size} {vg} -y"
         result = utils.exec_cmd(cmd, self.conn)
         if result["st"]:
-            print(f"Success in createing LV: {name}")
+            s.prt_log(f"Success in createing LV: {name}", 0)
             return True
         else:
-            print(f"Failed to create LV: {name}")
+            s.prt_log(f"Failed to create LV: {name}", 1)
             return False
 
     def create_thinpool(self, name, size, vg):
@@ -142,10 +162,10 @@ class ClusterLVM(object):
         cmd = f"lvcreate -T -L {size} {vg}/{name} -y"
         result = utils.exec_cmd(cmd, self.conn)
         if result["st"]:
-            print(f"Success in createing Thinpool: {name}")
+            s.prt_log(f"Success in createing Thinpool: {name}", 0)
             return True
         else:
-            print(f"Failed to create Thinpool {name}")
+            s.prt_log(f"Failed to create Thinpool {name}", 1)
             return False
 
     def create_thinlv(self, name, size, vg, thinpool):
@@ -153,10 +173,10 @@ class ClusterLVM(object):
         cmd = f"lvcreate -V {size} -n {name} {vg}/{thinpool} -y"
         result = utils.exec_cmd(cmd, self.conn)
         if result["st"]:
-            print(f"Success in createing Thin LV: {name}")
+            s.prt_log(f"Success in createing Thin LV: {name}", 0)
             return True
         else:
-            print(f"Failed to create Thin LV {name}")
+            s.prt_log(f"Failed to create Thin LV {name}", 1)
             return False
 
     def del_pv(self, name):
@@ -164,10 +184,10 @@ class ClusterLVM(object):
         cmd = f"pvremove {name} -y"
         result = utils.exec_cmd(cmd, self.conn)
         if result["st"]:
-            print(f"Success in deleting PV: {name}")
+            s.prt_log(f"Success in deleting PV: {name}", 0)
             return True
         else:
-            print(f"Failed to delete PV {name}")
+            s.prt_log(f"Failed to delete PV {name}", 1)
             return False
 
     def del_vg(self, name):
@@ -176,15 +196,14 @@ class ClusterLVM(object):
         for vg in self.vg_list:
             if vg[0] == name:
                 if int(vg[2]) > 0:
-                    print(f"{name} still have other lv resource. Cancel delete {name}.")
-                    sys.exit()
+                    s.prt_log(f"{name} still have other lv resource. Cancel delete {name}.", 2)
         cmd = f"vgremove {name} -y"
         result = utils.exec_cmd(cmd, self.conn)
         if result["st"]:
-            print(f"Success in deleting VG: {name}")
+            s.prt_log(f"Success in deleting VG: {name}", 0)
             return True
         else:
-            print(f"Failed to delete VG {name}")
+            s.prt_log(f"Failed to delete VG {name}", 1)
             return False
 
     def del_thinpool(self, vg, thinpool):
@@ -193,10 +212,10 @@ class ClusterLVM(object):
         cmd = f"lvremove /dev/{vg}/{thinpool} -y"
         result = utils.exec_cmd(cmd, self.conn)
         if result["st"]:
-            print(f"Success in deleting Thinpool: {vg}/{thinpool}")
+            s.prt_log(f"Success in deleting Thinpool: {vg}/{thinpool}", 0)
             return True
         else:
-            print(f"Failed to delete Thinpool: {vg}/{thinpool}")
+            s.prt_log(f"Failed to delete Thinpool: {vg}/{thinpool}", 1)
             return False
         pass
 
@@ -224,40 +243,98 @@ class ClusterLVM(object):
                 if i["PoolName"] == vg:
                     return i["StoragePool"]
 
+    def check_vg_exit(self, vg_name):
+        if self.vg_list:
+            for vg in self.vg_list:
+                if vg[0] == vg_name:
+                    return False
+        return True
+
+    def check_pv_exit(self, device_list):
+        pv_in_use = []
+        if self.pv_list:
+            for pv in self.pv_list:
+                if pv[0] in device_list:
+                    pv_in_use.append(pv[0])
+        if pv_in_use:
+            pv_in_use_str = ",".join(pv_in_use)
+            s.prt_log(f'{pv_in_use_str} have been used to create PV.', 1)
+            return False
+        else:
+            return True
+
     def get_pv_via_vg(self, vg):
         """通过VG名获取对应的PV"""
         pv_dict = {}
-        # pv_list = self.get_pvs()
         if self.pv_list:
             for pv in self.pv_list:
                 if pv[1] == vg:
                     pv_dict[pv[0]] = pv[2]
         if not pv_dict:
-            print(f"{vg} is not vg resource")
-            sys.exit()
-        # print(pv_dict)
+            s.prt_log(f"{vg} is not vg resource", 2)
         return pv_dict
 
     def get_vg_via_thinpool(self, thinpool):
         """通过thinpool名获取对应的VG"""
         vg_list = []
-        # lv_list = self.get_lvs()
         if self.lv_list:
             for lv in self.lv_list:
                 if lv[0] == thinpool:
                     vg_list.append(lv[1])
-        if not vg_list:
-            print(f"{thinpool} is not thinpool resource")
-            sys.exit()
-        # print(vg_list)
         return vg_list
+
+    def get_vg_free_pe(self, vg):
+        """获取vg中剩余的PE个数"""
+        cmd = f"vgdisplay {vg}"
+        result = utils.exec_cmd(cmd, self.conn)
+        if result:
+            if result["st"]:
+                re_free_pe = re.search(r'Free\s*PE / Size\s*(\d+)', result["rt"])
+                re_used_flag = re.search(r'Alloc\s*PE / Size\s*(\d+)', result["rt"])
+                free_pe = int(re_free_pe.group(1))
+                if int(re_used_flag.group(1)) == 0:
+                    free_pe = free_pe - 1
+                return free_pe
+
+    def get_device_size(self, device_list):
+        size = 0
+        lvm_list = self.get_lvm_device()
+        for device in device_list:
+            for lvm in lvm_list:
+                if device == lvm[0]:
+                    size = size + size_conversion(lvm[1]) - 4
+        return size
+
+    def check_and_get_size(self, data, size, type):
+        """
+        计算创建thinpool的可用空间大小，与用户输入的大小值进行比较
+        data: vg_name or list device
+        size: the size that user input
+        type: vg or device
+        """
+        real_size = 0
+        if type == "vg":
+            real_size = real_size + int(self.get_vg_free_pe(data)) * 4
+        if type == "device":
+            real_size = self.get_device_size(data)
+            real_size = real_size - 4
+        available_size = real_size - 4
+        if available_size <= 0:
+            s.prt_log("No available space.", 2)
+        if size:
+            size = size_conversion(size)
+            if size <= available_size:
+                return size
+            else:
+                s.prt_log(f"The size that you input is out of the actual available range (0,{available_size}M]", 2)
+        else:
+            return available_size
 
     def get_lvm_on_node(self):
         """将需要展示的数据处理成字典"""
 
         if not self.vg_list:
-            print("The node don't have VG.")
-            sys.exit()
+            s.prt_log("The node don't have VG.", 2)
         # pprint.pprint(self.res)
         # pprint.pprint(self.sp)
 
@@ -306,7 +383,6 @@ class ClusterLVM(object):
             vg_status = self.check_vg(vg[0])
             vg_data["linstor storage pool"]["sp name"] = vg_status
 
-            # vg_dict[vg[0]] = vg_data
         return vg_dict
 
     def show_vg(self, vg=None):
@@ -317,11 +393,11 @@ class ClusterLVM(object):
         try:
             if vg:
                 print('-' * 15, vg, '-' * 15)
-                print(yaml.dump(dict_vg[vg], sort_keys=False))
+                s.prt_log(yaml.dump(dict_vg[vg], sort_keys=False), 0)
             else:
-                print(yaml.dump(dict_vg, sort_keys=False))
+                s.prt_log(yaml.dump(dict_vg, sort_keys=False), 0)
         except KeyError:
-            print(f"{vg} does not exit.")
+            s.prt_log(f"{vg} does not exit.", 1)
 
     def show_unused_lvm_device(self):
         """表格展示未被用来创建PV的LVM设备"""
@@ -338,9 +414,9 @@ class ClusterLVM(object):
                             unused_lvm_device.remove(device)
             unused_lvm_device_without_fs = [i for i in unused_lvm_device if
                                             i[0] not in fs_list and "/dev/drbd" not in i[0] and "_00000" not in i[0]]
-            print(s.make_table(list_header, unused_lvm_device_without_fs))
+            s.prt_log(s.make_table(list_header, unused_lvm_device_without_fs), 0)
         else:
-            print(f"No message of unused device")
+            s.prt_log(f"No message of unused device", 1)
 
     def delete_vg(self, vg):
         if not self.check_vg(vg):
@@ -349,18 +425,19 @@ class ClusterLVM(object):
                 for pv in pv_dict.keys():
                     self.del_pv(pv)
         else:
-            print(f"{vg} is in used")
+            s.prt_log(f"{vg} is in used", 1)
 
     def delete_thinpool(self, thinpool, confirm):
         vg_list = self.get_vg_via_thinpool(thinpool)
+        if not vg_list:
+            s.prt_log(f"{thinpool} is not thinpool resource", 2)
         if len(vg_list) > 1:
             print(f'Thinpool with the same name "{thinpool}" exist in those vg: {vg_list}')
             vg = input("Input the VG Name that the thinpool you want to delete:")
             if vg.strip() in vg_list:
                 vg = vg.strip()
             else:
-                print("Error VG Name")
-                sys.exit()
+                s.prt_log("Error VG Name", 2)
         else:
             vg = vg_list[0]
         if not self.check_thinpool(vg, thinpool):
@@ -371,4 +448,4 @@ class ClusterLVM(object):
                         for pv in pv_dict.keys():
                             self.del_pv(pv)
         else:
-            print(f"{thinpool} is in used")
+            s.prt_log(f"{thinpool} is in used", 1)
