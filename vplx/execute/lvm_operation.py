@@ -244,16 +244,18 @@ class ClusterLVM(object):
                     return i["StoragePool"]
 
     def check_vg_exit(self, vg_name):
-        for vg in self.vg_list:
-            if vg[0] == vg_name:
-                return False
+        if self.vg_list:
+            for vg in self.vg_list:
+                if vg[0] == vg_name:
+                    return False
         return True
 
     def check_pv_exit(self, device_list):
         pv_in_use = []
-        for pv in self.pv_list:
-            if pv[0] in device_list:
-                pv_in_use.append(pv[0])
+        if self.pv_list:
+            for pv in self.pv_list:
+                if pv[0] in device_list:
+                    pv_in_use.append(pv[0])
         if pv_in_use:
             pv_in_use_str = ",".join(pv_in_use)
             s.prt_log(f'{pv_in_use_str} have been used to create PV.', 1)
@@ -290,8 +292,8 @@ class ClusterLVM(object):
                 re_free_pe = re.search(r'Free\s*PE / Size\s*(\d+)', result["rt"])
                 re_used_flag = re.search(r'Alloc\s*PE / Size\s*(\d+)', result["rt"])
                 free_pe = int(re_free_pe.group(1))
-                if re_used_flag.group(1) == 0:
-                    free_pe = free_pe - 4
+                if int(re_used_flag.group(1)) == 0:
+                    free_pe = free_pe - 1
                 return free_pe
 
     def get_device_size(self, device_list):
